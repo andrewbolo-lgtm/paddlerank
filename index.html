@@ -9,26 +9,32 @@
     <link rel="icon" type="image/png" href="./PRPM.png?v=2">
     <link rel="apple-touch-icon" href="./PRPM.png?v=2">
 
-    <!-- Tailwind CSS (Kept for layout integrity, but optimized via CSS overrides below) -->
+    <!-- Tailwind CSS with Custom PRPM Palette -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
+                        prpm: {
+                            navy: '#034160',    /* Deep Navy Teal */
+                            mint: '#15F9B7',    /* Electric Mint */
+                            cyan: '#0CA5E2',    /* Vibrant Cyan Blue */
+                            ice: '#BBE9FA'      /* Ice Blue / Mist */
+                        },
                         slate: { 50: '#f8fafc', 100: '#f1f5f9', 800: '#1e293b', 900: '#0f172a' },
-                        indigo: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
-                        emerald: { 500: '#10b981', 600: '#059669' }
+                        indigo: { 500: '#0CA5E2', 600: '#0CA5E2', 700: '#034160' },
+                        emerald: { 500: '#15F9B7', 600: '#10d99e' }
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Section 1 Fix: Removed external Google Fonts and universal * { transition } */
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             -webkit-tap-highlight-color: transparent;
+            background-color: #ffffff;
         }
         /* Hardware-accelerated, targeted transitions to prevent scroll jank */
         button, input, select {
@@ -39,7 +45,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Section 1 Fix: Contain layout paints on heavy lists */
+        /* Contain layout paints on heavy lists */
         #benchRosterList, #playersList, #historyContainer { contain: content; }
         
         .view-section { display: none; }
@@ -47,58 +53,58 @@
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+<body class="bg-white text-prpm-navy h-screen flex overflow-hidden">
 
-    <!-- Desktop Sidebar -->
-    <aside class="w-64 bg-[#053b5c] text-white flex-col shadow-xl z-10 hidden md:flex">
-        <div class="p-4 flex items-center justify-center border-b border-sky-900/60">
+    <!-- Desktop Sidebar (Deep Navy Teal #034160) -->
+    <aside class="w-64 bg-prpm-navy text-white flex-col shadow-xl z-10 hidden md:flex">
+        <div class="p-4 flex items-center justify-center border-b border-prpm-cyan/25">
             <img src="./PRPM.png?v=2" alt="Pickleball Rec Play Manager" class="w-44 h-auto object-contain">
         </div>
         <nav class="flex-1 p-4 space-y-2" id="nav-menu">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 rounded-lg shadow-sm text-white font-medium text-left">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-prpm-cyan rounded-lg shadow-sm text-white font-semibold text-left">
                 📋 Dashboard
             </button>
-            <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-sky-900/60 rounded-lg text-slate-200 font-medium text-left">
+            <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-prpm-ice font-medium text-left">
                 ⏱️ Match History
             </button>
-            <button onclick="switchTab('players')" id="nav-players" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-sky-900/60 rounded-lg text-slate-200 font-medium text-left">
+            <button onclick="switchTab('players')" id="nav-players" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-prpm-ice font-medium text-left">
                 👥 Players DB
             </button>
-            <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-sky-900/60 rounded-lg text-slate-200 font-medium text-left">
+            <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 rounded-lg text-prpm-ice font-medium text-left">
                 🏆 Leaderboard
             </button>
         </nav>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-16 md:pb-0 relative">
+    <!-- Main Content Area (Clean White #FFFFFF Background) -->
+    <main class="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-16 md:pb-0 relative bg-white">
         
         <!-- QM Command Header -->
-        <header class="bg-white border-b border-slate-200 px-3 py-3 sticky top-0 z-20 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <header class="bg-white border-b border-prpm-ice px-3 py-3 sticky top-0 z-20 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div class="flex items-center gap-2.5">
-                <img src="./PRPM.png?v=2" alt="PRPM" class="h-9 w-9 object-cover rounded-lg bg-[#053b5c] md:hidden shadow-sm">
-                <h2 id="pageTitle" class="text-lg md:text-xl font-bold text-slate-800 tracking-tight">Match Dashboard</h2>
+                <img src="./PRPM.png?v=2" alt="PRPM" class="h-9 w-9 object-cover rounded-lg bg-prpm-navy md:hidden shadow-sm">
+                <h2 id="pageTitle" class="text-lg md:text-xl font-bold text-prpm-navy tracking-tight">Match Dashboard</h2>
             </div>
             <div id="qmControls" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 shrink-0">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase">Courts</span>
-                    <button onclick="changeCourtCount(-1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-slate-300 font-bold text-slate-700 shadow-sm">-</button>
-                    <span id="courtCountDisplay" class="w-4 text-center font-extrabold text-indigo-600 text-sm">3</span>
-                    <button onclick="changeCourtCount(1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-slate-300 font-bold text-slate-700 shadow-sm">+</button>
+                <div class="flex items-center gap-1.5 bg-prpm-ice/35 px-2 py-1 rounded-lg border border-prpm-ice shrink-0">
+                    <span class="text-[10px] font-bold text-prpm-navy uppercase">Courts</span>
+                    <button onclick="changeCourtCount(-1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-prpm-ice font-bold text-prpm-navy shadow-sm">-</button>
+                    <span id="courtCountDisplay" class="w-4 text-center font-extrabold text-prpm-cyan text-sm">3</span>
+                    <button onclick="changeCourtCount(1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-prpm-ice font-bold text-prpm-navy shadow-sm">+</button>
                 </div>
 
-                <div class="bg-slate-100 p-0.5 rounded-lg flex border border-slate-200 text-xs font-semibold shrink-0">
-                    <button id="btn-doubles" onclick="setMatchType('doubles')" class="px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm">2v2</button>
-                    <button id="btn-singles" onclick="setMatchType('singles')" class="px-3 py-1.5 rounded text-slate-500">1v1</button>
+                <div class="bg-prpm-ice/35 p-0.5 rounded-lg flex border border-prpm-ice text-xs font-semibold shrink-0">
+                    <button id="btn-doubles" onclick="setMatchType('doubles')" class="px-3 py-1.5 rounded bg-white text-prpm-cyan font-bold shadow-sm">2v2</button>
+                    <button id="btn-singles" onclick="setMatchType('singles')" class="px-3 py-1.5 rounded text-prpm-navy/70">1v1</button>
                 </div>
 
-                <button onclick="fillOpenCourts()" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">
+                <button onclick="fillOpenCourts()" class="flex-1 sm:flex-none bg-prpm-cyan hover:bg-prpm-navy text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">
                     Fill Courts
                 </button>
             </div>
         </header>
 
-        <div class="p-3 md:p-6 pb-20">
+        <div class="p-3 md:p-6 pb-20 bg-white">
             
             <!-- DASHBOARD VIEW -->
             <div id="view-dashboard" class="view-section active max-w-4xl mx-auto space-y-4">
@@ -106,14 +112,14 @@
                 <!-- Active Courts -->
                 <section>
                     <div class="flex items-center justify-between mb-2">
-                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Live Courts</h2>
-                        <button onclick="toggleSessionMeta()" class="text-xs font-semibold text-indigo-600">Session Info ▾</button>
+                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-prpm-navy/70">Live Courts</h2>
+                        <button onclick="toggleSessionMeta()" class="text-xs font-semibold text-prpm-cyan hover:text-prpm-navy">Session Info ▾</button>
                     </div>
 
-                    <div id="sessionMetaDrawer" class="hidden bg-white p-3 rounded-xl border border-slate-200 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2 shadow-sm">
-                        <input type="text" id="sessionName" onchange="saveData()" placeholder="Session Name" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
-                        <input type="date" id="sessionDate" onchange="saveData()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
-                        <input type="text" id="sessionLocation" onchange="saveData()" placeholder="Location" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                    <div id="sessionMetaDrawer" class="hidden bg-white p-3 rounded-xl border border-prpm-ice mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2 shadow-sm">
+                        <input type="text" id="sessionName" onchange="saveData()" placeholder="Session Name" class="bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <input type="date" id="sessionDate" onchange="saveData()" class="bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <input type="text" id="sessionLocation" onchange="saveData()" placeholder="Location" class="bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
                     </div>
 
                     <div id="activeCourtsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -122,10 +128,10 @@
                 </section>
 
                 <!-- On Deck -->
-                <section id="onDeckSection" class="bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-sm">
+                <section id="onDeckSection" class="bg-prpm-ice/30 border border-prpm-ice rounded-xl p-3 shadow-sm">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800">Next Up (On Deck)</span>
-                        <span id="readyCountBadge" class="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">0 Ready</span>
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-prpm-navy">Next Up (On Deck)</span>
+                        <span id="readyCountBadge" class="text-[10px] font-extrabold bg-prpm-mint text-prpm-navy px-2.5 py-0.5 rounded-full shadow-xs">0 Ready</span>
                     </div>
                     <div id="onDeckList" class="space-y-1.5 text-sm">
                         <!-- Populated by JS -->
@@ -133,31 +139,31 @@
                 </section>
 
                 <!-- Bench Drawer & Walk-Ins -->
-                <section class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm space-y-3">
+                <section class="bg-white rounded-xl border border-prpm-ice p-3 shadow-sm space-y-3">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-sm font-bold text-slate-800">Players & Bench</h3>
-                        <span id="paidSummaryBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Paid: 0/0</span>
+                        <h3 class="text-sm font-bold text-prpm-navy">Players & Bench</h3>
+                        <span id="paidSummaryBadge" class="text-[10px] font-bold text-prpm-navy bg-prpm-mint/40 border border-prpm-mint px-2.5 py-0.5 rounded-full">Paid: 0/0</span>
                     </div>
 
                     <div class="flex gap-2">
-                        <input type="text" id="rosterFilterInput" oninput="renderBenchDrawer()" placeholder="Search or add walk-in..." class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
-                        <input type="number" id="walkInRating" placeholder="Rating" step="0.1" min="2.0" max="8.0" class="w-16 sm:w-20 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm text-center">
-                        <button onclick="quickAddWalkIn()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">+ Add</button>
+                        <input type="text" id="rosterFilterInput" oninput="renderBenchDrawer()" placeholder="Search or add walk-in..." class="flex-1 bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <input type="number" id="walkInRating" placeholder="Rating" step="0.1" min="2.0" max="8.0" class="w-16 sm:w-20 bg-white border border-prpm-ice rounded-lg px-2 py-2 text-sm text-center text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <button onclick="quickAddWalkIn()" class="bg-prpm-navy hover:bg-prpm-cyan text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">+ Add</button>
                     </div>
 
                     <div class="flex gap-1.5 overflow-x-auto no-scrollbar text-xs font-semibold py-1">
-                        <button onclick="setBenchFilter('checked')" id="filter-checked" class="px-3 py-1 rounded-full bg-indigo-600 text-white whitespace-nowrap">Today's Session</button>
-                        <button onclick="setBenchFilter('resting')" id="filter-resting" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">Resting</button>
-                        <button onclick="setBenchFilter('unpaid')" id="filter-unpaid" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">Unpaid</button>
-                        <button onclick="setBenchFilter('all')" id="filter-all" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">All DB</button>
+                        <button onclick="setBenchFilter('checked')" id="filter-checked" class="px-3 py-1 rounded-full bg-prpm-cyan text-white whitespace-nowrap">Today's Session</button>
+                        <button onclick="setBenchFilter('resting')" id="filter-resting" class="px-3 py-1 rounded-full bg-prpm-ice/40 text-prpm-navy whitespace-nowrap">Resting</button>
+                        <button onclick="setBenchFilter('unpaid')" id="filter-unpaid" class="px-3 py-1 rounded-full bg-prpm-ice/40 text-prpm-navy whitespace-nowrap">Unpaid</button>
+                        <button onclick="setBenchFilter('all')" id="filter-all" class="px-3 py-1 rounded-full bg-prpm-ice/40 text-prpm-navy whitespace-nowrap">All DB</button>
                     </div>
 
-                    <div id="benchRosterList" class="divide-y divide-slate-100 max-h-80 overflow-y-auto border-t border-slate-100">
+                    <div id="benchRosterList" class="divide-y divide-prpm-ice/60 max-h-80 overflow-y-auto border-t border-prpm-ice/60">
                         <!-- Populated by JS -->
                     </div>
                 </section>
 
-                <div class="pt-4 border-t border-slate-200">
+                <div class="pt-4 border-t border-prpm-ice/60">
                     <button onclick="endSession()" class="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-6 py-3 rounded-xl font-bold shadow-sm transition-colors">
                         🔌 End Current Session
                     </button>
@@ -166,8 +172,8 @@
 
             <!-- HISTORY VIEW -->
             <div id="view-history" class="view-section space-y-6 max-w-4xl mx-auto">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-4 border-b border-slate-100 pb-2">Global Match History</h3>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-prpm-ice">
+                    <h3 class="text-lg font-bold text-prpm-navy mb-4 border-b border-prpm-ice/60 pb-2">Global Match History</h3>
                     <div id="historyContainer" class="space-y-8"></div>
                 </div>
             </div>
@@ -175,54 +181,54 @@
             <!-- PLAYERS DB VIEW -->
             <div id="view-players" class="view-section max-w-3xl mx-auto space-y-6">
                 <!-- Add Player -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-sm font-semibold mb-3">Add to Database</h3>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-prpm-ice">
+                    <h3 class="text-sm font-bold text-prpm-navy mb-3">Add to Database</h3>
                     <div class="flex flex-col sm:flex-row gap-3">
-                        <input type="text" id="newPlayerName" placeholder="Type player name..." class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm">
-                        <input type="number" id="newPlayerRating" step="0.1" min="2.0" max="8.0" placeholder="Rating (Blank = 3.5)" class="w-full sm:w-44 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm">
-                        <button onclick="addPlayer()" class="w-full sm:w-auto bg-slate-800 text-white px-6 py-2.5 rounded-lg font-bold text-sm">Add</button>
+                        <input type="text" id="newPlayerName" placeholder="Type player name..." class="flex-1 bg-white border border-prpm-ice rounded-lg px-4 py-2.5 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <input type="number" id="newPlayerRating" step="0.1" min="2.0" max="8.0" placeholder="Rating (Blank = 3.5)" class="w-full sm:w-44 bg-white border border-prpm-ice rounded-lg px-4 py-2.5 text-sm text-prpm-navy focus:outline-none focus:border-prpm-cyan">
+                        <button onclick="addPlayer()" class="w-full sm:w-auto bg-prpm-navy hover:bg-prpm-cyan text-white px-6 py-2.5 rounded-lg font-bold text-sm">Add</button>
                     </div>
                     <div class="flex items-center gap-2 mt-3">
-                        <input type="checkbox" id="newPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500">
-                        <label for="newPlayerVerified" class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                        <input type="checkbox" id="newPlayerVerified" class="w-4 h-4 accent-prpm-cyan bg-white border-prpm-ice rounded">
+                        <label for="newPlayerVerified" class="text-xs font-semibold text-prpm-navy flex items-center gap-1">
                             Verified DUPR Player 🔵
                         </label>
                     </div>
                 </div>
 
                 <!-- DB Management -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-sm font-semibold mb-2">Database Management</h3>
-                    <p class="text-xs text-slate-500 mb-4">Export players and match history to a CSV file to backup data.</p>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-prpm-ice">
+                    <h3 class="text-sm font-bold text-prpm-navy mb-2">Database Management</h3>
+                    <p class="text-xs text-prpm-navy/70 mb-4">Export players and match history to a CSV file to backup data.</p>
                     <div class="flex flex-col sm:flex-row gap-3">
-                        <button onclick="exportCSV()" class="flex-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2">
+                        <button onclick="exportCSV()" class="flex-1 bg-prpm-mint text-prpm-navy hover:brightness-95 px-4 py-2.5 rounded-lg font-extrabold text-sm transition-all flex justify-center items-center gap-2 shadow-xs">
                             ⬇️ Export CSV
                         </button>
                         <div class="flex-1 relative">
                             <input type="file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="importCSV(event)">
-                            <button class="w-full bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2 pointer-events-none">
+                            <button class="w-full bg-white border border-prpm-cyan text-prpm-navy px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2 pointer-events-none">
                                 ⬆️ Import CSV
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50">
-                        <h3 class="font-semibold text-sm">Registered Roster</h3>
+                <div class="bg-white rounded-xl shadow-sm border border-prpm-ice overflow-hidden">
+                    <div class="p-4 border-b border-prpm-ice bg-prpm-ice/25">
+                        <h3 class="font-bold text-sm text-prpm-navy">Registered Roster</h3>
                     </div>
-                    <ul id="playersList" class="divide-y divide-slate-100 p-0"></ul>
+                    <ul id="playersList" class="divide-y divide-prpm-ice/60 p-0"></ul>
                 </div>
             </div>
 
             <!-- LEADERBOARD VIEW -->
             <div id="view-leaderboard" class="view-section max-w-4xl mx-auto">
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-3">
-                        <h3 class="text-sm font-semibold">Rankings</h3>
-                        <div class="bg-slate-200 p-0.5 rounded-lg flex border border-slate-300 text-xs font-semibold shrink-0">
-                            <button id="btn-lb-global" onclick="setLeaderboardMode('global')" class="px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm transition-colors">Global</button>
-                            <button id="btn-lb-session" onclick="setLeaderboardMode('session')" class="px-3 py-1.5 rounded text-slate-500 hover:text-slate-700 transition-colors">Today's Session</button>
+                <div class="bg-white rounded-xl shadow-sm border border-prpm-ice overflow-hidden">
+                    <div class="p-4 border-b border-prpm-ice bg-prpm-ice/25 flex justify-between items-center flex-wrap gap-3">
+                        <h3 class="text-sm font-bold text-prpm-navy">Rankings</h3>
+                        <div class="bg-white p-0.5 rounded-lg flex border border-prpm-ice text-xs font-semibold shrink-0">
+                            <button id="btn-lb-global" onclick="setLeaderboardMode('global')" class="px-3 py-1.5 rounded bg-prpm-cyan text-white shadow-sm transition-colors">Global</button>
+                            <button id="btn-lb-session" onclick="setLeaderboardMode('session')" class="px-3 py-1.5 rounded text-prpm-navy/70 hover:text-prpm-navy transition-colors">Today's Session</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
@@ -230,7 +236,7 @@
                             <thead id="leaderboardHead">
                                 <!-- Populated by JS -->
                             </thead>
-                            <tbody id="leaderboardBody" class="divide-y divide-slate-100"></tbody>
+                            <tbody id="leaderboardBody" class="divide-y divide-prpm-ice/60"></tbody>
                         </table>
                     </div>
                 </div>
@@ -240,47 +246,47 @@
     </main>
 
     <!-- Mobile Bottom Navigation -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around items-center pb-safe z-50 h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center w-1/4 h-full text-indigo-600">
+    <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-prpm-ice flex justify-around items-center pb-safe z-50 h-16 shadow-[0_-4px_6px_-1px_rgba(3,65,96,0.06)]">
+        <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center w-1/4 h-full text-prpm-cyan">
             <span class="text-xl mb-0.5">📋</span><span class="text-[10px] font-bold">Play</span>
         </button>
-        <button onclick="switchTab('history')" id="mob-nav-history" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+        <button onclick="switchTab('history')" id="mob-nav-history" class="flex flex-col items-center justify-center w-1/4 h-full text-prpm-navy/50">
             <span class="text-xl mb-0.5">⏱️</span><span class="text-[10px] font-bold">History</span>
         </button>
-        <button onclick="switchTab('players')" id="mob-nav-players" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+        <button onclick="switchTab('players')" id="mob-nav-players" class="flex flex-col items-center justify-center w-1/4 h-full text-prpm-navy/50">
             <span class="text-xl mb-0.5">👥</span><span class="text-[10px] font-bold">DB</span>
         </button>
-        <button onclick="switchTab('leaderboard')" id="mob-nav-leaderboard" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+        <button onclick="switchTab('leaderboard')" id="mob-nav-leaderboard" class="flex flex-col items-center justify-center w-1/4 h-full text-prpm-navy/50">
             <span class="text-xl mb-0.5">🏆</span><span class="text-[10px] font-bold">Ranks</span>
         </button>
     </nav>
 
     <!-- Edit Player Modal Overlay -->
-    <div id="editModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-sm text-slate-800">✏️ Edit Player</h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+    <div id="editModal" class="hidden fixed inset-0 bg-prpm-navy/60 z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden border border-prpm-ice">
+            <div class="p-4 border-b border-prpm-ice flex justify-between items-center bg-prpm-ice/25">
+                <h3 class="font-bold text-sm text-prpm-navy">✏️ Edit Player</h3>
+                <button onclick="closeEditModal()" class="text-prpm-navy/60 hover:text-prpm-navy font-bold">✕</button>
             </div>
             <div class="p-5 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name</label>
-                    <input type="text" id="editPlayerName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium">
+                    <label class="block text-xs font-bold text-prpm-navy/70 uppercase tracking-wide mb-1">Name</label>
+                    <input type="text" id="editPlayerName" class="w-full bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm font-medium text-prpm-navy focus:outline-none focus:border-prpm-cyan">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Rating</label>
-                    <input type="number" id="editPlayerRating" step="0.001" min="2.0" max="8.0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono font-medium">
+                    <label class="block text-xs font-bold text-prpm-navy/70 uppercase tracking-wide mb-1">Rating</label>
+                    <input type="number" id="editPlayerRating" step="0.001" min="2.0" max="8.0" class="w-full bg-white border border-prpm-ice rounded-lg px-3 py-2 text-sm font-mono font-medium text-prpm-navy focus:outline-none focus:border-prpm-cyan">
                 </div>
-                <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                    <input type="checkbox" id="editPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
-                    <label for="editPlayerVerified" class="text-sm font-medium text-slate-700 cursor-pointer flex items-center gap-1">
+                <div class="flex items-center gap-2 mt-2 pt-2 border-t border-prpm-ice/60">
+                    <input type="checkbox" id="editPlayerVerified" class="w-4 h-4 accent-prpm-cyan bg-white border-prpm-ice rounded cursor-pointer">
+                    <label for="editPlayerVerified" class="text-sm font-medium text-prpm-navy cursor-pointer flex items-center gap-1">
                         Verified DUPR Player 🔵
                     </label>
                 </div>
             </div>
-            <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onclick="saveEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm">Save Changes</button>
+            <div class="p-4 border-t border-prpm-ice bg-prpm-ice/20 flex justify-end gap-3">
+                <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold text-prpm-navy hover:bg-prpm-ice/50 transition-colors">Cancel</button>
+                <button onclick="saveEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold bg-prpm-cyan text-white hover:bg-prpm-navy transition-colors shadow-sm">Save Changes</button>
             </div>
         </div>
     </div>
@@ -418,4 +424,565 @@
                 
                 const r1 = t1.reduce((s,p) => s + (p.rating||3.5), 0) / t1.length;
                 const r2 = t2.reduce((s,p) => s + (p.rating||3.5), 0) / t2.length;
-                const total = wCost + sCost + (WEIGHTS.RATING_GAP *
+                const total = wCost + sCost + (WEIGHTS.RATING_GAP * Math.abs(r1 - r2));
+                
+                if (total < minCost) { minCost = total; best = { t1, t2 }; }
+            };
+
+            if (size === 4) {
+                for(let i=0; i<pool.length-3; i++) for(let j=i+1; j<pool.length-2; j++)
+                for(let k=j+1; k<pool.length-1; k++) for(let l=k+1; l<pool.length; l++) {
+                    const wCost = WEIGHTS.WAIT_INDEX * (i+j+k+l);
+                    const [p0,p1,p2,p3] = [pool[i],pool[j],pool[k],pool[l]];
+                    evaluate([p0,p1],[p2,p3],wCost); evaluate([p0,p2],[p1,p3],wCost); evaluate([p0,p3],[p1,p2],wCost);
+                }
+            } else {
+                for(let i=0; i<pool.length-1; i++) for(let j=i+1; j<pool.length; j++) evaluate([pool[i]],[pool[j]], WEIGHTS.WAIT_INDEX*(i+j));
+            }
+            if(!best) return null;
+            return { id: uid(), type: matchType, t1Ids: best.t1.map(p=>p.id), t2Ids: best.t2.map(p=>p.id), score1: null, score2: null };
+        }
+
+        function fillOpenCourts(specNum = null) {
+            syncCourtSlots();
+            let assigned = 0;
+            for (const slot of activeCourts) {
+                if (specNum !== null && slot.courtNum !== specNum) continue;
+                if (slot.match) continue;
+                const match = selectOptimalMatch(getPlayingPlayerIds());
+                if (!match) break;
+                slot.match = match;
+                assigned++;
+            }
+            if(assigned===0 && specNum!==null) alert("Not enough Ready players on bench.");
+            saveData(true); renderApp();
+        }
+
+        function reshuffleCourt(courtNum) {
+            const slot = activeCourts.find(c => c.courtNum === courtNum);
+            if(!slot) return;
+            const replacement = selectOptimalMatch(getPlayingPlayerIds(courtNum));
+            if(!replacement) { alert('No alternative players ready.'); return; }
+            slot.match = replacement;
+            saveData(true); renderApp();
+        }
+
+        function getOnDeckQueue(max = 2) {
+            const busy = getPlayingPlayerIds();
+            const vG = new Map(), vW = new Map(), q = [];
+            for (let i = 0; i < max; i++) {
+                const m = selectOptimalMatch(busy, vG, vW);
+                if (!m) break;
+                q.push(m);
+                [...m.t1Ids, ...m.t2Ids].forEach(id => { busy.add(id); vG.set(id, (vG.get(id)||0)+1); vW.set(id, playSequence+i+1); });
+            }
+            return q;
+        }
+
+        function submitCourtScore(courtNum) {
+            const slot = activeCourts.find(c => c.courtNum === courtNum);
+            if (!slot || !slot.match) return;
+            const m = slot.match;
+            const s1 = parseInt(document.getElementById(`score1-${courtNum}`).value);
+            const s2 = parseInt(document.getElementById(`score2-${courtNum}`).value);
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0 || s1 === s2) { alert('Enter valid non-tied scores.'); return; }
+
+            const getR = ids => ids.reduce((s, id) => s + (players.find(x=>x.id===id)?.rating||3.5), 0)/ids.length;
+            const expected = 1 / (1 + Math.pow(10, (getR(m.t2Ids) - getR(m.t1Ids)) / 1.25));
+            const actual = s1 > s2 ? 1 : 0;
+            const pdMult = 1 + (Math.min(Math.abs(s1 - s2), 11) / 11);
+
+            playSequence++;
+            const apply = (ids, exp, act, pd) => {
+                ids.forEach(id => {
+                    const p = players.find(x=>x.id===id); if(!p) return;
+                    const delta = (p.verified ? VERIFIED_K : BASE_K) * pdMult * (act - exp);
+                    p.rating = Math.min(8.0, Math.max(2.0, p.rating + delta));
+                    p.matchesPlayed = (p.matchesPlayed||0)+1;
+                    p.sessionMatches = (p.sessionMatches||0)+1;
+                    p.sessionWins = (p.sessionWins||0) + act;
+                    p.sessionPointDiff = (p.sessionPointDiff||0) + pd;
+                    p.lastPlayedOrder = playSequence;
+                });
+            };
+            apply(m.t1Ids, expected, actual, s1 - s2);
+            apply(m.t2Ids, 1 - expected, 1 - actual, s2 - s1);
+            
+            m.score1 = s1; m.score2 = s2;
+            m.sessionName = document.getElementById('sessionName').value || 'Open Play';
+            m.sessionDate = document.getElementById('sessionDate').value || '';
+            sessionMatches.push(m);
+            historicalMatches.push(m);
+            slot.match = null;
+            fillOpenCourts(courtNum);
+        }
+
+        // --- 3. QM CONTROLS & UI STATE ---
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${tab}`).classList.add('active');
+            
+            ['dashboard', 'history', 'players', 'leaderboard'].forEach(t => {
+                const nav = document.getElementById(`nav-${t}`);
+                if(nav) {
+                    if (t === tab) { 
+                        nav.classList.add('bg-prpm-cyan', 'text-white', 'font-semibold'); 
+                        nav.classList.remove('hover:bg-white/10', 'text-prpm-ice', 'font-medium'); 
+                    } else { 
+                        nav.classList.remove('bg-prpm-cyan', 'text-white', 'font-semibold'); 
+                        nav.classList.add('hover:bg-white/10', 'text-prpm-ice', 'font-medium'); 
+                    }
+                }
+                const mob = document.getElementById(`mob-nav-${t}`);
+                if(mob) {
+                    if (t === tab) { mob.classList.add('text-prpm-cyan'); mob.classList.remove('text-prpm-navy/50'); }
+                    else { mob.classList.remove('text-prpm-cyan'); mob.classList.add('text-prpm-navy/50'); }
+                }
+            });
+            const titles = { dashboard: 'Match Dashboard', history: 'Match History', players: 'Player Database', leaderboard: 'Leaderboard' };
+            document.getElementById('pageTitle').innerText = titles[tab];
+            
+            if(tab === 'dashboard') document.getElementById('qmControls').classList.remove('hidden');
+            else document.getElementById('qmControls').classList.add('hidden');
+            
+            renderApp();
+        }
+
+        function changeCourtCount(delta) {
+            numCourts = Math.min(6, Math.max(1, numCourts + delta));
+            document.getElementById('courtCountDisplay').textContent = numCourts;
+            syncCourtSlots(); saveData(true); renderApp();
+        }
+        function setMatchType(type) {
+            matchType = type;
+            document.getElementById('btn-singles').className = type==='singles'?'px-3 py-1.5 rounded bg-white text-prpm-cyan font-bold shadow-sm':'px-3 py-1.5 rounded text-prpm-navy/70';
+            document.getElementById('btn-doubles').className = type==='doubles'?'px-3 py-1.5 rounded bg-white text-prpm-cyan font-bold shadow-sm':'px-3 py-1.5 rounded text-prpm-navy/70';
+            saveData(true);
+        }
+        function toggleSessionMeta() { document.getElementById('sessionMetaDrawer').classList.toggle('hidden'); }
+
+        function setLeaderboardMode(mode) {
+            leaderboardMode = mode;
+            document.getElementById('btn-lb-global').className = mode === 'global' ? 'px-3 py-1.5 rounded bg-prpm-cyan text-white shadow-sm' : 'px-3 py-1.5 rounded text-prpm-navy/70';
+            document.getElementById('btn-lb-session').className = mode === 'session' ? 'px-3 py-1.5 rounded bg-prpm-cyan text-white shadow-sm' : 'px-3 py-1.5 rounded text-prpm-navy/70';
+            renderLeaderboard();
+        }
+        function setBenchFilter(f) {
+            benchFilter = f;
+            ['checked','resting','unpaid','all'].forEach(x => {
+                document.getElementById(`filter-${x}`).className = x===f
+                    ? 'px-3 py-1 rounded-full bg-prpm-cyan text-white whitespace-nowrap'
+                    : 'px-3 py-1 rounded-full bg-prpm-ice/40 text-prpm-navy whitespace-nowrap';
+            });
+            renderBenchDrawer();
+        }
+
+        function cyclePlayerState(id) {
+            const p = players.find(x=>x.id===id); if(!p) return;
+            if (getPlayingPlayerIds().has(id)) { alert('Player is currently on a live court.'); return; }
+            const next = { ready: 'resting', resting: 'out', out: 'ready' };
+            p.sessionState = next[p.sessionState || 'ready'] || 'ready';
+            if (p.sessionState === 'ready' && !p.lastPlayedOrder) p.lastPlayedOrder = 0;
+            saveData(true); renderApp();
+        }
+        function togglePlayerPaid(id) {
+            const p = players.find(x=>x.id===id); if(!p) return;
+            p.paid = !p.paid; saveData(true); renderBenchDrawer();
+        }
+
+        function quickAddWalkIn() {
+            const inp = document.getElementById('rosterFilterInput');
+            const rInp = document.getElementById('walkInRating');
+            const name = inp.value.trim();
+            if(!name) return;
+            let r = parseFloat(rInp.value); if(isNaN(r) || r<2 || r>8) r = 3.5;
+            players.unshift({
+                id: uid(), name, rating: r, verified: false, matchesPlayed: 0,
+                sessionState: 'ready', paid: false, sessionMatches: 0, sessionWins: 0, sessionPointDiff: 0, lastPlayedOrder: 0
+            });
+            inp.value = ''; rInp.value = ''; saveData(true); renderApp();
+        }
+
+        function endSession() {
+            if(!confirm("End session? All matches are saved globally. Dashboard will reset.")) return;
+            sessionMatches = []; activeCourts = []; syncCourtSlots();
+            players.forEach(p => {
+                p.sessionState = 'ready'; p.sessionMatches = 0; p.sessionWins = 0;
+                p.sessionPointDiff = 0; p.lastPlayedOrder = 0; p.paid = false;
+            });
+            document.getElementById('sessionName').value = '';
+            document.getElementById('sessionLocation').value = '';
+            document.getElementById('sessionDate').valueAsDate = new Date();
+            saveData(true); switchTab('history');
+        }
+
+        // --- 4. CSV (RFC4180) & DATA MGMT ---
+        function csvEscape(val) { const s = String(val??''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+        function parseCSV(line) {
+            const out = []; let cur = '', inQ = false;
+            for(let i=0; i<line.length; i++) {
+                const c = line[i];
+                if(inQ) { if(c==='"' && line[i+1]==='"') { cur+='"'; i++; } else if(c==='"') inQ=false; else cur+=c; }
+                else { if(c==='"') inQ=true; else if(c===',') { out.push(cur); cur=''; } else cur+=c; }
+            }
+            out.push(cur); return out;
+        }
+
+        function exportCSV() {
+            const lines = ['---PLAYERS---', 'ID,Name,Rating,MatchesPlayed,Verified,Paid',
+                ...players.map(p => [csvEscape(p.id), csvEscape(p.name), (p.rating||3.5).toFixed(3), p.matchesPlayed||0, !!p.verified, !!p.paid].join(',')),
+                '---MATCHES---', 'ID,SessionName,SessionDate,Type,T1,T2,Score1,Score2',
+                ...historicalMatches.map(m => [csvEscape(m.sessionName), csvEscape(m.sessionDate), csvEscape(m.type), csvEscape(m.t1Ids.join('|')), csvEscape(m.t2Ids.join('|')), m.score1, m.score2].join(','))];
+            const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = `PRPM_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+        }
+
+        function importCSV(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const rows = ev.target.result.split(/\r?\n/);
+                let mode = 'PLAYERS', pC = 0, mC = 0;
+                for(const r of rows) {
+                    const row = r.trim(); if(!row) continue;
+                    if(row==='---PLAYERS---'){mode='PLAYERS'; continue;} if(row==='---MATCHES---'){mode='MATCHES'; continue;}
+                    if(row.startsWith('ID,Name') || row.startsWith('ID,Session')) continue;
+                    const c = parseCSV(row);
+                    if(mode==='PLAYERS' && c.length>=5) {
+                        const existing = players.find(x=>x.id===c[0]);
+                        if(existing) { existing.name=c[1]; existing.rating=parseFloat(c[2])||3.5; existing.matchesPlayed=parseInt(c[3])||0; existing.verified=c[4]==='true'; }
+                        else { players.push({ id:c[0]||uid(), name:c[1], rating:parseFloat(c[2])||3.5, matchesPlayed:parseInt(c[3])||0, verified:c[4]==='true', sessionState:'ready', paid:false, sessionMatches:0, sessionWins:0, sessionPointDiff:0 }); }
+                        pC++;
+                    } else if(mode==='MATCHES' && c.length>=8) {
+                        historicalMatches.push({ sessionName:c[1], sessionDate:c[2], type:c[3], t1Ids:c[4].split('|'), t2Ids:c[5].split('|'), score1:parseInt(c[6]), score2:parseInt(c[7]) });
+                        mC++;
+                    }
+                }
+                e.target.value=''; saveData(true); renderApp(); alert(`Imported ${pC} players, ${mC} matches.`);
+            }; r.readAsText(file);
+        }
+
+        function addPlayer() {
+            const n = document.getElementById('newPlayerName').value.trim();
+            let r = parseFloat(document.getElementById('newPlayerRating').value);
+            const v = document.getElementById('newPlayerVerified').checked;
+            if(!n) return; if(isNaN(r) || r<2 || r>8) r=3.5;
+            players.push({ id:uid(), name:n, rating:r, verified:v, matchesPlayed:0, sessionState:'ready', paid:false, sessionMatches:0, sessionWins:0, sessionPointDiff:0 });
+            document.getElementById('newPlayerName').value=''; document.getElementById('newPlayerRating').value=''; document.getElementById('newPlayerVerified').checked=false;
+            saveData(true); renderApp();
+        }
+        function deletePlayer(id) {
+            if(!confirm("Permanently delete player?")) return;
+            players = players.filter(x=>x.id!==id); saveData(true); renderApp();
+        }
+        function openEditModal(id) {
+            const p = players.find(x=>x.id===id); if(!p) return;
+            editingPlayerId = id;
+            document.getElementById('editPlayerName').value = p.name;
+            document.getElementById('editPlayerRating').value = p.rating.toFixed(3);
+            document.getElementById('editPlayerVerified').checked = !!p.verified;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+        function closeEditModal() { editingPlayerId=null; document.getElementById('editModal').classList.add('hidden'); }
+        function saveEditModal() {
+            if(!editingPlayerId) return;
+            const p = players.find(x=>x.id===editingPlayerId); if(!p) return;
+            const n = document.getElementById('editPlayerName').value.trim();
+            const r = parseFloat(document.getElementById('editPlayerRating').value);
+            if(n) p.name = n; if(!isNaN(r) && r>=2 && r<=8) p.rating = r;
+            p.verified = document.getElementById('editPlayerVerified').checked;
+            closeEditModal(); saveData(true); renderApp();
+        }
+
+        // --- 5. RENDERERS ---
+        function renderApp() {
+            if(activeTab === 'dashboard') { renderCourts(); renderOnDeck(); renderBenchDrawer(); }
+            if(activeTab === 'players') renderPlayers();
+            if(activeTab === 'leaderboard') renderLeaderboard();
+            if(activeTab === 'history') renderHistory();
+        }
+
+        function nameBadge(id) {
+            const p = players.find(x=>x.id===id); if(!p) return 'Unknown';
+            return `${esc(p.name)} ${p.verified ? '🔵' : ''}`;
+        }
+
+        function renderCourts() {
+            const grid = document.getElementById('activeCourtsGrid');
+            if(activeCourts.length===0) { grid.innerHTML = '<div class="text-sm text-prpm-navy/50">No active courts.</div>'; return; }
+            grid.innerHTML = activeCourts.map(c => {
+                if(!c.match) return `
+                    <div class="bg-white border-2 border-dashed border-prpm-ice rounded-xl p-4 flex flex-col items-center justify-center min-h-[140px]">
+                        <span class="text-xs font-bold text-prpm-navy/50 uppercase mb-3">Court ${c.courtNum} - Open</span>
+                        <button onclick="fillOpenCourts(${c.courtNum})" class="bg-prpm-ice/60 text-prpm-navy font-bold px-4 py-2 rounded-lg text-sm transition-colors hover:bg-prpm-cyan hover:text-white">Fill Court</button>
+                    </div>`;
+                const m = c.match;
+                const renderSide = ids => `<div class="flex flex-col gap-1 flex-1 text-center md:text-left">${ids.map(id => `<div class="text-xs sm:text-sm font-bold text-prpm-navy">${nameBadge(id)}</div>`).join('')}</div>`;
+                return `
+                    <div class="bg-white border border-prpm-ice shadow-sm rounded-xl p-3 sm:p-4 flex flex-col">
+                        <div class="flex items-center justify-between border-b border-prpm-ice/60 pb-2 mb-3">
+                            <span class="text-[10px] sm:text-xs font-extrabold text-prpm-cyan uppercase tracking-wider">Court ${c.courtNum}</span>
+                            <button onclick="reshuffleCourt(${c.courtNum})" class="text-[10px] sm:text-xs text-prpm-navy hover:bg-prpm-ice/60 bg-prpm-ice/30 px-2 py-1 rounded font-bold">↻ Swap</button>
+                        </div>
+                        <div class="flex justify-between items-center gap-2 mb-2">
+                            ${renderSide(m.t1Ids)}
+                            <input type="number" id="score1-${c.courtNum}" class="w-12 h-10 sm:w-14 sm:h-12 text-center text-lg font-bold text-prpm-navy border border-prpm-ice rounded-lg focus:outline-none focus:border-prpm-cyan bg-white">
+                        </div>
+                        <div class="text-center text-[10px] font-extrabold text-prpm-cyan mb-2">VS</div>
+                        <div class="flex justify-between items-center gap-2 mb-4">
+                            ${renderSide(m.t2Ids)}
+                            <input type="number" id="score2-${c.courtNum}" class="w-12 h-10 sm:w-14 sm:h-12 text-center text-lg font-bold text-prpm-navy border border-prpm-ice rounded-lg focus:outline-none focus:border-prpm-cyan bg-white">
+                        </div>
+                        <button onclick="submitCourtScore(${c.courtNum})" class="w-full bg-prpm-mint hover:brightness-95 text-prpm-navy font-extrabold py-2 sm:py-2.5 rounded-lg text-sm shadow-sm transition-all active:scale-95">Finish & Rotate</button>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderOnDeck() {
+            const list = document.getElementById('onDeckList');
+            const q = getOnDeckQueue(2);
+            document.getElementById('readyCountBadge').textContent = `${players.filter(p=>p.sessionState==='ready').length} Ready`;
+            if(q.length === 0) { list.innerHTML = '<div class="text-xs text-prpm-navy/70 italic">Not enough ready players to form next match.</div>'; return; }
+            list.innerHTML = q.map((m, i) => `
+                <div class="bg-white border border-prpm-ice rounded-lg p-2 text-xs font-bold text-prpm-navy shadow-xs">
+                    <span class="text-prpm-cyan mr-1">#${i+1}</span> 
+                    ${m.t1Ids.map(nameBadge).join(' & ')} <span class="text-prpm-cyan mx-1">vs</span> ${m.t2Ids.map(nameBadge).join(' & ')}
+                </div>
+            `).join('');
+        }
+
+        function renderBenchDrawer() {
+            const list = document.getElementById('benchRosterList');
+            const fStr = (document.getElementById('rosterFilterInput').value || '').toLowerCase();
+            let pool = players;
+            if (benchFilter === 'checked') pool = pool.filter(p => p.sessionState !== 'out');
+            else if (benchFilter === 'resting') pool = pool.filter(p => p.sessionState === 'resting');
+            else if (benchFilter === 'unpaid') pool = pool.filter(p => p.sessionState !== 'out' && !p.paid);
+            if (fStr) pool = pool.filter(p => p.name.toLowerCase().includes(fStr));
+
+            pool.sort((a, b) => {
+                if (a.sessionState !== b.sessionState) return a.sessionState === 'ready' ? -1 : 1;
+                return (a.lastPlayedOrder || 0) - (b.lastPlayedOrder || 0);
+            });
+
+            const attendees = players.filter(p => p.sessionState !== 'out');
+            document.getElementById('paidSummaryBadge').textContent = `Paid: ${attendees.filter(p=>p.paid).length}/${attendees.length}`;
+
+            list.innerHTML = pool.map(p => {
+                const isPlaying = getPlayingPlayerIds().has(p.id);
+                let stateBtn = '';
+                if (isPlaying) { stateBtn = `<span class="text-[10px] font-bold text-prpm-cyan bg-prpm-ice/40 px-2 py-1 rounded border border-prpm-ice">On Court</span>`; }
+                else {
+                    const c = p.sessionState === 'ready' 
+                        ? 'bg-prpm-mint/40 text-prpm-navy border border-prpm-mint' 
+                        : p.sessionState === 'resting' 
+                        ? 'bg-prpm-ice text-prpm-navy' 
+                        : 'bg-slate-100 text-prpm-navy/50';
+                    const t = p.sessionState === 'ready' ? 'Ready' : p.sessionState === 'resting' ? 'Resting' : 'Out';
+                    stateBtn = `<button onclick="cyclePlayerState('${p.id}')" class="text-[10px] font-bold px-2 py-1 rounded ${c}">${t}</button>`;
+                }
+                const paidBtn = p.paid 
+                    ? `<button onclick="togglePlayerPaid('${p.id}')" class="text-[10px] font-extrabold bg-prpm-mint text-prpm-navy px-2 py-1 rounded">₱ Paid</button>`
+                    : `<button onclick="togglePlayerPaid('${p.id}')" class="text-[10px] font-bold bg-prpm-ice/40 text-prpm-navy/70 px-2 py-1 rounded">Unpaid</button>`;
+
+                return `
+                    <div class="flex items-center justify-between py-2 sm:px-2 hover:bg-prpm-ice/15 transition-colors">
+                        <div class="flex flex-col">
+                            <span class="text-xs sm:text-sm font-bold text-prpm-navy">${esc(p.name)} ${p.verified?'🔵':''}</span>
+                            <span class="text-[10px] font-bold text-prpm-navy/60">R: ${p.rating.toFixed(3)} | ${p.sessionMatches||0}g</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${paidBtn}
+                            ${stateBtn}
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderPlayers() {
+            const list = document.getElementById('playersList');
+            if(players.length === 0) { list.innerHTML = '<li class="p-4 text-prpm-navy/50 text-center text-sm">No players in database.</li>'; return; }
+            list.innerHTML = players.map(p => `
+                <li class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-prpm-ice/15 gap-2 sm:gap-0">
+                    <div class="flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-full bg-prpm-navy flex items-center justify-center text-prpm-mint font-bold text-sm shrink-0">${p.name.charAt(0).toUpperCase()}</div>
+                        <span class="font-bold text-sm sm:text-base text-prpm-navy">${esc(p.name)} ${p.verified?'🔵':''}</span>
+                    </div>
+                    <div class="flex items-center gap-4 justify-between sm:justify-end ml-11 sm:ml-0">
+                        <span class="text-[10px] sm:text-xs font-bold text-prpm-navy/60 tracking-wide uppercase">Rating: <span class="text-prpm-cyan">${p.rating.toFixed(3)}</span></span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openEditModal('${p.id}')" class="text-prpm-navy hover:bg-prpm-cyan hover:text-white bg-prpm-ice/40 px-2 py-1 rounded font-bold text-[10px] sm:text-xs">Edit</button>
+                            <button onclick="deletePlayer('${p.id}')" class="text-prpm-navy/70 hover:text-red-600 bg-prpm-ice/40 px-2 py-1 rounded font-bold text-[10px] sm:text-xs">Del</button>
+                        </div>
+                    </div>
+                </li>`).join('');
+        }
+
+        function renderLeaderboard() {
+            const tHead = document.getElementById('leaderboardHead');
+            const tBody = document.getElementById('leaderboardBody');
+
+            if (leaderboardMode === 'global') {
+                tHead.innerHTML = `
+                    <tr class="text-xs font-bold text-prpm-navy uppercase bg-prpm-ice/20 border-b border-prpm-ice">
+                        <th class="px-4 py-3">Rank</th>
+                        <th class="px-4 py-3">Player</th>
+                        <th class="px-4 py-3 text-center">Rating</th>
+                        <th class="px-4 py-3 text-center">Matches</th>
+                    </tr>`;
+                
+                tBody.innerHTML = [...players].sort((a,b)=>b.rating-a.rating).map((p,i) => `
+                    <tr class="hover:bg-prpm-ice/15 transition-colors">
+                        <td class="px-4 py-3 text-prpm-navy/60 font-bold text-sm">#${i+1}</td>
+                        <td class="px-4 py-3 font-bold text-sm text-prpm-navy">${(i===0&&p.matchesPlayed>0)?'👑 ':''}${esc(p.name)} ${p.verified?'🔵':''}</td>
+                        <td class="px-4 py-3 text-center"><span class="bg-prpm-ice/50 text-prpm-navy px-2.5 py-1 rounded-full text-xs font-extrabold">${p.rating.toFixed(3)}</span></td>
+                        <td class="px-4 py-3 text-center text-prpm-navy/70 text-sm font-bold">${p.matchesPlayed||0}</td>
+                    </tr>`).join('');
+            } else {
+                tHead.innerHTML = `
+                    <tr class="text-xs font-bold text-prpm-navy uppercase bg-prpm-ice/20 border-b border-prpm-ice">
+                        <th class="px-4 py-3">Rank</th>
+                        <th class="px-4 py-3">Player</th>
+                        <th class="px-4 py-3 text-center">W-L</th>
+                        <th class="px-4 py-3 text-center">Pt Diff</th>
+                    </tr>`;
+                
+                const sessionPlayers = players.filter(p => (p.sessionMatches || 0) > 0 || p.sessionState !== 'out');
+                if (sessionPlayers.length === 0) {
+                    tBody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-prpm-navy/50 text-sm">No active players in current session.</td></tr>`;
+                    return;
+                }
+                
+                sessionPlayers.sort((a, b) => {
+                    const winsA = a.sessionWins || 0;
+                    const winsB = b.sessionWins || 0;
+                    if (winsA !== winsB) return winsB - winsA;
+                    const pdA = a.sessionPointDiff || 0;
+                    const pdB = b.sessionPointDiff || 0;
+                    return pdB - pdA;
+                });
+
+                tBody.innerHTML = sessionPlayers.map((p,i) => {
+                    const w = p.sessionWins || 0;
+                    const l = (p.sessionMatches || 0) - w;
+                    const pd = p.sessionPointDiff || 0;
+                    const pdStr = pd > 0 ? `+${pd}` : `${pd}`;
+                    const pdColor = pd > 0 ? 'text-prpm-cyan' : (pd < 0 ? 'text-red-500' : 'text-prpm-navy/60');
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    
+                    return `
+                    <tr class="hover:bg-prpm-ice/15 transition-colors">
+                        <td class="px-4 py-3 text-prpm-navy/60 font-bold text-sm">${medal}</td>
+                        <td class="px-4 py-3 font-bold text-sm text-prpm-navy">${esc(p.name)} ${p.verified?'🔵':''}</td>
+                        <td class="px-4 py-3 text-center font-bold text-prpm-navy">${w} - ${l}</td>
+                        <td class="px-4 py-3 text-center text-sm font-extrabold ${pdColor}">${pdStr}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            if(historicalMatches.length === 0) { container.innerHTML = '<div class="text-center text-prpm-navy/50 py-10 text-sm">No match history.</div>'; return; }
+            const groups = {};
+            historicalMatches.forEach(m => {
+                const k = `${m.sessionName||'Open Play'}::${m.sessionDate||''}`;
+                if(!groups[k]) groups[k] = []; groups[k].push(m);
+            });
+            
+            container.innerHTML = Object.keys(groups).map(k => {
+                const [n, d] = k.split('::');
+                const matches = groups[k];
+                
+                let pStats = {};
+                matches.forEach(m => {
+                    const pd = m.score1 - m.score2;
+                    const process = (ids, w, ptDiff) => {
+                        ids.forEach(id => {
+                            if(!pStats[id]) pStats[id] = { id, w: 0, m: 0, pd: 0 };
+                            pStats[id].m++;
+                            pStats[id].w += w;
+                            pStats[id].pd += ptDiff;
+                        });
+                    };
+                    process(m.t1Ids, m.score1 > m.score2 ? 1 : 0, pd);
+                    process(m.t2Ids, m.score2 > m.score1 ? 1 : 0, -pd);
+                });
+                
+                const sortedRecap = Object.values(pStats).sort((a,b) => {
+                    if(b.w !== a.w) return b.w - a.w;
+                    return b.pd - a.pd;
+                });
+                
+                const recapHtml = sortedRecap.map((p, i) => {
+                    const w = p.w;
+                    const l = p.m - w;
+                    const pdStr = p.pd > 0 ? `+${p.pd}` : `${p.pd}`;
+                    const pdColor = p.pd > 0 ? 'text-prpm-cyan' : (p.pd < 0 ? 'text-red-500' : 'text-prpm-navy/60');
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    return `
+                    <tr class="hover:bg-prpm-ice/15 transition-colors">
+                        <td class="px-4 py-2 text-prpm-navy/60 font-bold text-xs sm:text-sm">${medal}</td>
+                        <td class="px-4 py-2 font-bold text-xs sm:text-sm text-prpm-navy">${nameBadge(p.id)}</td>
+                        <td class="px-4 py-2 text-center font-bold text-prpm-navy text-xs sm:text-sm">${w} - ${l}</td>
+                        <td class="px-4 py-2 text-center text-xs sm:text-sm font-extrabold ${pdColor}">${pdStr}</td>
+                    </tr>`;
+                }).join('');
+                
+                const matchesHtml = matches.map((m) => `
+                    <div class="bg-white rounded-lg p-3 flex justify-between items-center text-xs sm:text-sm border border-prpm-ice">
+                        <div class="${m.score1>m.score2?'font-bold text-prpm-navy':'text-prpm-navy/50'} flex-1 text-right">${m.t1Ids.map(nameBadge).join('<br class="sm:hidden"><span class="hidden sm:inline"> & </span>')}</div>
+                        <div class="px-2 sm:px-3 font-mono font-extrabold text-prpm-cyan text-sm sm:text-base shrink-0">${m.score1} - ${m.score2}</div>
+                        <div class="${m.score2>m.score1?'font-bold text-prpm-navy':'text-prpm-navy/50'} flex-1">${m.t2Ids.map(nameBadge).join('<br class="sm:hidden"><span class="hidden sm:inline"> & </span>')}</div>
+                    </div>
+                `).join('');
+                
+                return `
+                    <div class="mb-4 bg-white border border-prpm-ice rounded-xl shadow-sm overflow-hidden">
+                        <details class="group">
+                            <summary class="flex items-center justify-between p-4 cursor-pointer bg-prpm-ice/25 hover:bg-prpm-ice/40 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                <div>
+                                    <h4 class="font-bold text-prpm-navy text-base flex items-center gap-2"><span>📅</span> ${esc(n)}</h4>
+                                    <span class="text-xs font-bold text-prpm-navy/60">${esc(d)}</span>
+                                </div>
+                                <span class="text-prpm-cyan group-open:rotate-180 transition-transform text-lg">▼</span>
+                            </summary>
+                            <div class="p-4 border-t border-prpm-ice space-y-6 bg-white">
+                                <div>
+                                    <h5 class="text-[10px] sm:text-xs font-extrabold text-prpm-navy/70 uppercase tracking-wider mb-3">🏆 Session Leaderboard</h5>
+                                    <div class="overflow-x-auto border border-prpm-ice rounded-lg">
+                                        <table class="w-full text-left border-collapse min-w-full">
+                                            <thead>
+                                                <tr class="text-[10px] sm:text-xs font-bold text-prpm-navy uppercase bg-prpm-ice/20 border-b border-prpm-ice">
+                                                    <th class="px-4 py-2">Rank</th>
+                                                    <th class="px-4 py-2">Player</th>
+                                                    <th class="px-4 py-2 text-center whitespace-nowrap">W-L</th>
+                                                    <th class="px-4 py-2 text-center whitespace-nowrap">Pt Diff</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-prpm-ice/60">
+                                                ${recapHtml}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-[10px] sm:text-xs font-extrabold text-prpm-navy/70 uppercase tracking-wider mb-3">⚔️ Match Log</h5>
+                                    <div class="space-y-2">
+                                        ${matchesHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    </div>`;
+            }).join('');
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
