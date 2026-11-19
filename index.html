@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PaddleRank - DUPR Algorithm</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS (Kept for layout integrity, but optimized via CSS overrides below) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -16,24 +14,32 @@
                         slate: { 50: '#f8fafc', 100: '#f1f5f9', 800: '#1e293b', 900: '#0f172a' },
                         indigo: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
                         emerald: { 500: '#10b981', 600: '#059669' }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
     <style>
-        * { transition: all 0.2s ease-in-out; }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        /* Section 1 Fix: Removed external Google Fonts and universal * { transition } */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Hardware-accelerated, targeted transitions to prevent scroll jank */
+        button, input, select {
+            transition: background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+        }
+        button:active { transform: scale(0.98); }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* Section 1 Fix: Contain layout paints on heavy lists */
+        #benchRosterList, #playersList, #historyContainer { contain: content; }
+        
         .view-section { display: none; }
         .view-section.active { display: block; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
@@ -41,21 +47,21 @@
     <!-- Desktop Sidebar -->
     <aside class="w-64 bg-slate-900 text-white flex-col shadow-xl z-10 hidden md:flex">
         <div class="p-6 flex items-center gap-3 border-b border-slate-700">
-            <i class="ph ph-tennis-ball text-3xl text-emerald-500"></i>
+            <span class="text-2xl">🎾</span>
             <h1 class="text-xl font-bold tracking-tight">PaddleRank</h1>
         </div>
         <nav class="flex-1 p-4 space-y-2" id="nav-menu">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-4 py-3 bg-indigo-600 rounded-lg shadow-sm text-white font-medium text-left">
-                <i class="ph ph-squares-four text-xl"></i> Dashboard
+                📋 Dashboard
             </button>
             <button onclick="switchTab('history')" id="nav-history" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-slate-300 font-medium text-left">
-                <i class="ph ph-clock-counter-clockwise text-xl"></i> Match History
+                ⏱️ Match History
             </button>
             <button onclick="switchTab('players')" id="nav-players" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-slate-300 font-medium text-left">
-                <i class="ph ph-users text-xl"></i> Players DB
+                👥 Players DB
             </button>
             <button onclick="switchTab('leaderboard')" id="nav-leaderboard" class="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-800 rounded-lg text-slate-300 font-medium text-left">
-                <i class="ph ph-trophy text-xl"></i> Leaderboard
+                🏆 Leaderboard
             </button>
         </nav>
     </aside>
@@ -63,131 +69,143 @@
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col h-full overflow-y-auto no-scrollbar pb-16 md:pb-0 relative">
         
-        <!-- Header -->
-        <header class="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col md:flex-row justify-between items-start md:items-center sticky top-0 z-10 shadow-sm gap-4">
+        <!-- QM Command Header -->
+        <header class="bg-white border-b border-slate-200 px-3 py-3 sticky top-0 z-20 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div class="flex items-center gap-2">
-                <i class="ph ph-tennis-ball text-2xl text-emerald-500 md:hidden"></i>
-                <h2 id="pageTitle" class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Match Dashboard</h2>
+                <span class="text-2xl md:hidden">🎾</span>
+                <h2 id="pageTitle" class="text-lg md:text-xl font-bold text-slate-800 tracking-tight">Match Dashboard</h2>
             </div>
-            <div class="flex flex-row flex-wrap md:flex-nowrap gap-3 items-center w-full md:w-auto justify-between md:justify-end">
-                <div class="bg-slate-100 p-1 rounded-lg flex gap-1 border border-slate-200 shrink-0">
-                    <button id="btn-singles" onclick="setMatchType('singles')" class="px-3 md:px-4 py-1.5 rounded text-sm font-medium text-slate-500 hover:text-slate-800">Singles</button>
-                    <button id="btn-doubles" onclick="setMatchType('doubles')" class="px-3 md:px-4 py-1.5 rounded text-sm font-medium bg-white text-indigo-600 shadow-sm">Doubles</button>
+            <div id="qmControls" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <div class="flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 shrink-0">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase">Courts</span>
+                    <button onclick="changeCourtCount(-1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-slate-300 font-bold text-slate-700 shadow-sm">-</button>
+                    <span id="courtCountDisplay" class="w-4 text-center font-extrabold text-indigo-600 text-sm">3</span>
+                    <button onclick="changeCourtCount(1)" class="w-6 h-6 flex items-center justify-center rounded bg-white border border-slate-300 font-bold text-slate-700 shadow-sm">+</button>
                 </div>
-                <button onclick="generateRound()" class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 md:px-5 py-2 md:py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md text-sm md:text-base">
-                    <i class="ph ph-arrows-clockwise text-lg"></i> <span class="hidden sm:inline">Generate Round</span> <span class="sm:hidden">Generate</span> <span id="roundCounterBadge" class="bg-white text-indigo-600 text-xs px-2 py-0.5 rounded-full ml-1 font-bold">1</span>
+
+                <div class="bg-slate-100 p-0.5 rounded-lg flex border border-slate-200 text-xs font-semibold shrink-0">
+                    <button id="btn-doubles" onclick="setMatchType('doubles')" class="px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm">2v2</button>
+                    <button id="btn-singles" onclick="setMatchType('singles')" class="px-3 py-1.5 rounded text-slate-500">1v1</button>
+                </div>
+
+                <button onclick="fillOpenCourts()" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">
+                    Fill Courts
                 </button>
             </div>
         </header>
 
-        <div class="p-4 md:p-8">
+        <div class="p-3 md:p-6 pb-20">
             
             <!-- DASHBOARD VIEW -->
-            <div id="view-dashboard" class="view-section active space-y-6 max-w-4xl mx-auto">
+            <div id="view-dashboard" class="view-section active max-w-4xl mx-auto space-y-4">
                 
-                <!-- Session Details -->
-                <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
-                        <i class="ph ph-calendar-check text-indigo-600"></i> Session Details
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <input type="text" id="sessionName" oninput="saveData()" placeholder="Session Name (e.g., Sunday Smash)" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                        <input type="date" id="sessionDate" onchange="saveData()" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
-                        <input type="text" id="sessionLocation" oninput="saveData()" placeholder="Location (e.g., City Courts)" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+                <!-- Active Courts -->
+                <section>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Live Courts</h2>
+                        <button onclick="toggleSessionMeta()" class="text-xs font-semibold text-indigo-600">Session Info ▾</button>
                     </div>
-                </div>
 
-                <!-- Session Check-In -->
-                <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-                        <i class="ph ph-users-three text-indigo-600"></i> Today's Check-In
-                    </h3>
-                    <p class="text-sm text-slate-500 mb-4">Select available players to play right now. Tap to check players in or out.</p>
-                    <div id="sessionRoster" class="flex flex-wrap gap-2 md:gap-3">
+                    <div id="sessionMetaDrawer" class="hidden bg-white p-3 rounded-xl border border-slate-200 mb-3 grid grid-cols-1 sm:grid-cols-3 gap-2 shadow-sm">
+                        <input type="text" id="sessionName" onchange="saveData()" placeholder="Session Name" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                        <input type="date" id="sessionDate" onchange="saveData()" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                        <input type="text" id="sessionLocation" onchange="saveData()" placeholder="Location" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500">
+                    </div>
+
+                    <div id="activeCourtsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         <!-- Populated by JS -->
                     </div>
-                </div>
+                </section>
 
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-semibold flex items-center gap-2">
-                        <i class="ph ph-sword text-indigo-600"></i> Active Round Matches
-                    </h3>
-                </div>
-                
-                <div id="byeContainer" class="hidden"></div>
-                <div id="matchesContainer" class="space-y-4"></div>
+                <!-- On Deck -->
+                <section id="onDeckSection" class="bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-sm">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-extrabold uppercase tracking-wider text-amber-800">Next Up (On Deck)</span>
+                        <span id="readyCountBadge" class="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">0 Ready</span>
+                    </div>
+                    <div id="onDeckList" class="space-y-1.5 text-sm">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
 
-                <!-- End Session Button -->
-                <div class="pt-6 border-t border-slate-200">
-                    <button onclick="endSession()" class="w-full md:w-auto flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-6 py-3 rounded-xl font-semibold shadow-sm transition-colors">
-                        <i class="ph ph-power text-xl"></i> End Current Session
+                <!-- Bench Drawer & Walk-Ins -->
+                <section class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-slate-800">Players & Bench</h3>
+                        <span id="paidSummaryBadge" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Paid: 0/0</span>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="rosterFilterInput" oninput="renderBenchDrawer()" placeholder="Search or add walk-in..." class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm">
+                        <input type="number" id="walkInRating" placeholder="Rating" step="0.1" min="2.0" max="8.0" class="w-16 sm:w-20 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm text-center">
+                        <button onclick="quickAddWalkIn()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold shrink-0">+ Add</button>
+                    </div>
+
+                    <div class="flex gap-1.5 overflow-x-auto no-scrollbar text-xs font-semibold py-1">
+                        <button onclick="setBenchFilter('checked')" id="filter-checked" class="px-3 py-1 rounded-full bg-indigo-600 text-white whitespace-nowrap">Today's Session</button>
+                        <button onclick="setBenchFilter('resting')" id="filter-resting" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">Resting</button>
+                        <button onclick="setBenchFilter('unpaid')" id="filter-unpaid" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">Unpaid</button>
+                        <button onclick="setBenchFilter('all')" id="filter-all" class="px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap">All DB</button>
+                    </div>
+
+                    <div id="benchRosterList" class="divide-y divide-slate-100 max-h-80 overflow-y-auto border-t border-slate-100">
+                        <!-- Populated by JS -->
+                    </div>
+                </section>
+
+                <div class="pt-4 border-t border-slate-200">
+                    <button onclick="endSession()" class="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-6 py-3 rounded-xl font-bold shadow-sm transition-colors">
+                        🔌 End Current Session
                     </button>
-                    <p class="text-xs text-slate-400 mt-2 md:w-auto w-full text-center md:text-left">Ending the session saves matches to History and clears the Dashboard.</p>
                 </div>
             </div>
 
             <!-- HISTORY VIEW -->
             <div id="view-history" class="view-section space-y-6 max-w-4xl mx-auto">
-                <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i class="ph ph-clock-counter-clockwise text-indigo-600"></i> Global Match History
-                    </h3>
-                    <div id="historyContainer" class="space-y-8">
-                        <!-- Populated by JS -->
-                    </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-semibold mb-4 border-b border-slate-100 pb-2">Global Match History</h3>
+                    <div id="historyContainer" class="space-y-8"></div>
                 </div>
             </div>
 
             <!-- PLAYERS DB VIEW -->
             <div id="view-players" class="view-section max-w-3xl mx-auto space-y-6">
                 <!-- Add Player -->
-                <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                        <i class="ph ph-user-plus text-indigo-600"></i> Add to Database
-                    </h3>
-                    
-                    <div class="flex flex-col gap-3">
-                        <div class="flex flex-col sm:flex-row gap-3">
-                            <input type="text" id="newPlayerName" onkeypress="handleEnterKey(event)" placeholder="Type player name..." class="flex-1 bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full">
-                            <input type="number" id="newPlayerRating" onkeypress="handleEnterKey(event)" step="0.1" min="2.0" max="8.0" placeholder="Rating (Blank = 3.5)" class="w-full sm:w-44 bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                            <button onclick="addPlayer()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 sm:py-2 rounded-lg shadow-sm font-medium">
-                                Add Player
-                            </button>
-                        </div>
-                        
-                        <div class="flex items-center gap-2">
-                            <input type="checkbox" id="newPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
-                            <label for="newPlayerVerified" class="text-sm font-medium text-slate-700 cursor-pointer flex items-center gap-1.5">
-                                Verified DUPR Player <i class="ph-fill ph-seal-check text-blue-500 text-lg"></i>
-                            </label>
-                            <span class="text-xs text-slate-400 ml-1 hidden sm:inline">(Locks rating volatility to act as an anchor)</span>
-                        </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-semibold mb-3">Add to Database</h3>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="newPlayerName" placeholder="Type player name..." class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm">
+                        <input type="number" id="newPlayerRating" step="0.1" min="2.0" max="8.0" placeholder="Rating (Blank = 3.5)" class="w-full sm:w-44 bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm">
+                        <button onclick="addPlayer()" class="w-full sm:w-auto bg-slate-800 text-white px-6 py-2.5 rounded-lg font-bold text-sm">Add</button>
+                    </div>
+                    <div class="flex items-center gap-2 mt-3">
+                        <input type="checkbox" id="newPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500">
+                        <label for="newPlayerVerified" class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                            Verified DUPR Player 🔵
+                        </label>
                     </div>
                 </div>
 
-                <!-- Database Management (CSV) -->
-                <div class="bg-white p-5 md:p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
-                        <i class="ph ph-database text-emerald-600"></i> Database Management
-                    </h3>
-                    <p class="text-sm text-slate-500 mb-4">Export your players and total match history to a CSV file, or import an existing CSV to sync devices.</p>
+                <!-- DB Management -->
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-semibold mb-2">Database Management</h3>
+                    <p class="text-xs text-slate-500 mb-4">Export players and match history to a CSV file to backup data.</p>
                     <div class="flex flex-col sm:flex-row gap-3">
-                        <button onclick="exportCSV()" class="flex-1 flex items-center justify-center gap-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2.5 rounded-lg font-medium transition-colors">
-                            <i class="ph ph-download-simple text-lg"></i> Export CSV
+                        <button onclick="exportCSV()" class="flex-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2">
+                            ⬇️ Export CSV
                         </button>
                         <div class="flex-1 relative">
-                            <input type="file" id="csvFileInput" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="importCSV(event)">
-                            <button class="w-full flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-lg font-medium transition-colors pointer-events-none">
-                                <i class="ph ph-upload-simple text-lg"></i> Import CSV
+                            <input type="file" accept=".csv" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="importCSV(event)">
+                            <button class="w-full bg-white border border-slate-300 text-slate-700 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2 pointer-events-none">
+                                ⬆️ Import CSV
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Roster List -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                        <h3 class="font-semibold">Registered Roster</h3>
+                    <div class="p-4 border-b border-slate-100 bg-slate-50">
+                        <h3 class="font-semibold text-sm">Registered Roster</h3>
                     </div>
                     <ul id="playersList" class="divide-y divide-slate-100 p-0"></ul>
                 </div>
@@ -196,20 +214,17 @@
             <!-- LEADERBOARD VIEW -->
             <div id="view-leaderboard" class="view-section max-w-4xl mx-auto">
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="p-5 md:p-6 border-b border-slate-100 bg-slate-50">
-                        <h3 class="text-lg font-semibold flex items-center gap-2">
-                            <i class="ph ph-ranking text-emerald-500"></i> Global Ratings
-                        </h3>
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-3">
+                        <h3 class="text-sm font-semibold">Rankings</h3>
+                        <div class="bg-slate-200 p-0.5 rounded-lg flex border border-slate-300 text-xs font-semibold shrink-0">
+                            <button id="btn-lb-global" onclick="setLeaderboardMode('global')" class="px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm transition-colors">Global</button>
+                            <button id="btn-lb-session" onclick="setLeaderboardMode('session')" class="px-3 py-1.5 rounded text-slate-500 hover:text-slate-700 transition-colors">Today's Session</button>
+                        </div>
                     </div>
-                    <div class="p-0 overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-full">
-                            <thead>
-                                <tr class="text-xs font-semibold text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
-                                    <th class="px-4 md:px-6 py-3">Rank</th>
-                                    <th class="px-4 md:px-6 py-3">Player</th>
-                                    <th class="px-4 md:px-6 py-3 text-center">Rating</th>
-                                    <th class="px-4 md:px-6 py-3 text-center">Matches</th>
-                                </tr>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-full text-sm">
+                            <thead id="leaderboardHead">
+                                <!-- Populated by JS -->
                             </thead>
                             <tbody id="leaderboardBody" class="divide-y divide-slate-100"></tbody>
                         </table>
@@ -223,820 +238,730 @@
     <!-- Mobile Bottom Navigation -->
     <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around items-center pb-safe z-50 h-16 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <button onclick="switchTab('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center w-1/4 h-full text-indigo-600">
-            <i class="ph-fill ph-squares-four text-2xl mb-1"></i>
-            <span class="text-[10px] font-semibold">Play</span>
+            <span class="text-xl mb-0.5">📋</span><span class="text-[10px] font-bold">Play</span>
         </button>
-        <button onclick="switchTab('history')" id="mob-nav-history" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400 hover:text-slate-600">
-            <i class="ph ph-clock-counter-clockwise text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">History</span>
+        <button onclick="switchTab('history')" id="mob-nav-history" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+            <span class="text-xl mb-0.5">⏱️</span><span class="text-[10px] font-bold">History</span>
         </button>
-        <button onclick="switchTab('players')" id="mob-nav-players" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400 hover:text-slate-600">
-            <i class="ph ph-users text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">DB</span>
+        <button onclick="switchTab('players')" id="mob-nav-players" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+            <span class="text-xl mb-0.5">👥</span><span class="text-[10px] font-bold">DB</span>
         </button>
-        <button onclick="switchTab('leaderboard')" id="mob-nav-leaderboard" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400 hover:text-slate-600">
-            <i class="ph ph-trophy text-2xl mb-1"></i>
-            <span class="text-[10px] font-medium">Ranks</span>
+        <button onclick="switchTab('leaderboard')" id="mob-nav-leaderboard" class="flex flex-col items-center justify-center w-1/4 h-full text-slate-400">
+            <span class="text-xl mb-0.5">🏆</span><span class="text-[10px] font-bold">Ranks</span>
         </button>
     </nav>
 
     <!-- Edit Player Modal Overlay -->
     <div id="editModal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-50 z-[100] flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2"><i class="ph ph-pencil-simple text-indigo-600"></i> Edit Player</h3>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600"><i class="ph ph-x text-xl"></i></button>
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-sm text-slate-800">✏️ Edit Player</h3>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
             </div>
             <div class="p-5 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Player Name</label>
-                    <input type="text" id="editPlayerName" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                    <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Name</label>
+                    <input type="text" id="editPlayerName" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Rating</label>
-                    <input type="number" id="editPlayerRating" step="0.001" min="2.0" max="8.0" class="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono font-medium">
+                    <input type="number" id="editPlayerRating" step="0.001" min="2.0" max="8.0" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono font-medium">
                 </div>
                 <div class="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100">
-                    <input type="checkbox" id="editPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2 cursor-pointer">
-                    <label for="editPlayerVerified" class="text-sm font-medium text-slate-700 cursor-pointer flex items-center gap-1.5">
-                        Verified DUPR Player <i class="ph-fill ph-seal-check text-blue-500 text-lg"></i>
+                    <input type="checkbox" id="editPlayerVerified" class="w-4 h-4 text-indigo-600 bg-slate-100 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer">
+                    <label for="editPlayerVerified" class="text-sm font-medium text-slate-700 cursor-pointer flex items-center gap-1">
+                        Verified DUPR Player 🔵
                     </label>
                 </div>
             </div>
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onclick="saveEditModal()" class="px-4 py-2 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm">Save Changes</button>
+                <button onclick="closeEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onclick="saveEditModal()" class="px-4 py-2 rounded-lg text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm">Save Changes</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- STATE MANAGEMENT ---
+        // --- 1. ZERO DEPENDENCY & RESILIENT STORAGE ENGINE ---
         let players = []; 
-        let activeSessionIds = new Set();
         let historicalMatches = []; 
-        let currentRoundMatches = [];
-        let currentByes = []; 
-        let roundCounter = 1;
+        let sessionMatches = [];
+        let activeCourts = [];
+        let numCourts = 3;
         let matchType = 'doubles';
+        let playSequence = 1;
+        let benchFilter = 'checked';
         let activeTab = 'dashboard';
+        let leaderboardMode = 'global';
         let editingPlayerId = null;
 
         const STARTING_RATING = 3.500;
         const BASE_K = 0.1; 
         const VERIFIED_K = 0.02; 
+        const WEIGHTS = { WAIT_INDEX: 1.8, REPEAT_PARTNER: 12.0, REPEAT_OPP: 4.0, RATING_GAP: 6.5 };
 
-        // --- LOCAL STORAGE (AUTO-SAVE) ENGINE ---
-        function saveData() {
-            const data = {
-                players: players,
-                activeSessionIds: Array.from(activeSessionIds),
-                historicalMatches: historicalMatches,
-                currentRoundMatches: currentRoundMatches,
-                currentByes: currentByes,
-                roundCounter: roundCounter,
-                matchType: matchType,
-                sessionName: document.getElementById('sessionName').value,
-                sessionDate: document.getElementById('sessionDate').value,
-                sessionLocation: document.getElementById('sessionLocation').value
+        function esc(str) {
+            return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function uid() { return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`; }
+
+        let saveTimer = null;
+        function saveData(immediate = false) {
+            const persist = () => {
+                const payload = {
+                    version: 2, players, historicalMatches, sessionMatches, activeCourts, numCourts, matchType, playSequence,
+                    sessionName: document.getElementById('sessionName').value,
+                    sessionDate: document.getElementById('sessionDate').value,
+                    sessionLocation: document.getElementById('sessionLocation').value
+                };
+                try { localStorage.setItem('paddleRankData', JSON.stringify(payload)); }
+                catch(e) { console.error(e); alert('Storage error. Backup data immediately via CSV.'); }
             };
-            localStorage.setItem('paddleRankData', JSON.stringify(data));
+            clearTimeout(saveTimer);
+            if (immediate) persist(); else saveTimer = setTimeout(persist, 250);
         }
 
         function loadData() {
-            const stored = localStorage.getItem('paddleRankData');
-            if (stored) {
-                try {
-                    const data = JSON.parse(stored);
-                    players = data.players || [];
-                    activeSessionIds = new Set(data.activeSessionIds || []);
-                    historicalMatches = data.historicalMatches || [];
-                    currentRoundMatches = data.currentRoundMatches || [];
-                    currentByes = data.currentByes || [];
-                    roundCounter = data.roundCounter || 1;
-                    matchType = data.matchType || 'doubles';
-                    
-                    if(data.sessionName) document.getElementById('sessionName').value = data.sessionName;
-                    if(data.sessionDate) document.getElementById('sessionDate').value = data.sessionDate;
-                    else document.getElementById('sessionDate').valueAsDate = new Date();
-                    
-                    if(data.sessionLocation) document.getElementById('sessionLocation').value = data.sessionLocation;
-                    
-                    setMatchType(matchType);
-                    document.getElementById('roundCounterBadge').innerText = roundCounter;
-                } catch(e) {
-                    document.getElementById('sessionDate').valueAsDate = new Date();
-                }
-            } else {
-                document.getElementById('sessionDate').valueAsDate = new Date();
+            const raw = localStorage.getItem('paddleRankData');
+            const dEl = document.getElementById('sessionDate');
+            if(!raw) { if(dEl) dEl.valueAsDate = new Date(); syncCourtSlots(); return; }
+            try {
+                const d = JSON.parse(raw);
+                players = d.players || [];
+                historicalMatches = d.historicalMatches || [];
+                sessionMatches = d.sessionMatches || [];
+                activeCourts = d.activeCourts || [];
+                numCourts = d.numCourts || 3;
+                matchType = d.matchType || 'doubles';
+                playSequence = d.playSequence || 1;
+                
+                if(d.sessionName) document.getElementById('sessionName').value = d.sessionName;
+                if(d.sessionLocation) document.getElementById('sessionLocation').value = d.sessionLocation;
+                if(d.sessionDate && dEl) dEl.value = d.sessionDate; else if(dEl) dEl.valueAsDate = new Date();
+                
+                // Set default player state to 'ready'
+                players.forEach(p => { if (!p.sessionState || p.sessionState === 'out') p.sessionState = 'ready'; });
+                
+                setMatchType(matchType);
+                document.getElementById('courtCountDisplay').textContent = numCourts;
+                syncCourtSlots();
+            } catch(e) {
+                localStorage.setItem(`paddleRankData_backup_${Date.now()}`, raw);
+                if(dEl) dEl.valueAsDate = new Date();
+                syncCourtSlots();
             }
         }
 
-        // --- UI & TAB LOGIC ---
+        // --- 2. MATCHMAKING & CONTINUOUS ROTATION ENGINE ---
+        function syncCourtSlots() {
+            while (activeCourts.length < numCourts) activeCourts.push({ courtNum: activeCourts.length + 1, match: null });
+            if (activeCourts.length > numCourts) {
+                for (let i = activeCourts.length - 1; i >= numCourts; i--) {
+                    if (!activeCourts[i].match) activeCourts.splice(i, 1);
+                }
+            }
+        }
+
+        function getPlayingPlayerIds(excludeCourtNum = null) {
+            const ids = new Set();
+            for (const c of activeCourts) {
+                if (c.match && c.courtNum !== excludeCourtNum) {
+                    c.match.t1Ids.forEach(id => ids.add(id));
+                    c.match.t2Ids.forEach(id => ids.add(id));
+                }
+            }
+            return ids;
+        }
+
+        function buildSessionHistoryMatrices() {
+            const pMap = new Map(), oMap = new Map();
+            const key = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+            const inc = (map, a, b) => map.set(key(a, b), (map.get(key(a, b)) || 0) + 1);
+
+            const relevant = [...sessionMatches, ...activeCourts.map(c => c.match).filter(Boolean)];
+            for (const m of relevant) {
+                if (m.t1Ids.length === 2) inc(pMap, m.t1Ids[0], m.t1Ids[1]);
+                if (m.t2Ids.length === 2) inc(pMap, m.t2Ids[0], m.t2Ids[1]);
+                for (const p1 of m.t1Ids) for (const p2 of m.t2Ids) inc(oMap, p1, p2);
+            }
+            return { getP: (a,b) => pMap.get(key(a,b))||0, getO: (a,b) => oMap.get(key(a,b))||0 };
+        }
+
+        function selectOptimalMatch(excludedIds, virtualGames = new Map(), virtualWait = new Map()) {
+            const size = matchType === 'doubles' ? 4 : 2;
+            const eligible = players.filter(p => p.sessionState === 'ready' && !excludedIds.has(p.id));
+            if (eligible.length < size) return null;
+
+            const ranked = [...eligible].sort((a, b) => {
+                const gA = (a.sessionMatches || 0) + (virtualGames.get(a.id) || 0);
+                const gB = (b.sessionMatches || 0) + (virtualGames.get(b.id) || 0);
+                if (gA !== gB) return gA - gB;
+                const wA = virtualWait.get(a.id) ?? (a.lastPlayedOrder || 0);
+                const wB = virtualWait.get(b.id) ?? (b.lastPlayedOrder || 0);
+                if (wA !== wB) return wA - wB;
+                return Math.random() - 0.5;
+            });
+
+            const pool = ranked.slice(0, size === 4 ? 8 : 6);
+            const { getP, getO } = buildSessionHistoryMatrices();
+            let best = null, minCost = Infinity;
+
+            const evaluate = (t1, t2, wCost) => {
+                let sCost = 0;
+                if (t1.length === 2) sCost += WEIGHTS.REPEAT_PARTNER * getP(t1[0].id, t1[1].id);
+                if (t2.length === 2) sCost += WEIGHTS.REPEAT_PARTNER * getP(t2[0].id, t2[1].id);
+                for (const a of t1) for (const b of t2) sCost += WEIGHTS.REPEAT_OPP * getO(a.id, b.id);
+                
+                const r1 = t1.reduce((s,p) => s + (p.rating||3.5), 0) / t1.length;
+                const r2 = t2.reduce((s,p) => s + (p.rating||3.5), 0) / t2.length;
+                const total = wCost + sCost + (WEIGHTS.RATING_GAP * Math.abs(r1 - r2));
+                
+                if (total < minCost) { minCost = total; best = { t1, t2 }; }
+            };
+
+            if (size === 4) {
+                for(let i=0; i<pool.length-3; i++) for(let j=i+1; j<pool.length-2; j++)
+                for(let k=j+1; k<pool.length-1; k++) for(let l=k+1; l<pool.length; l++) {
+                    const wCost = WEIGHTS.WAIT_INDEX * (i+j+k+l);
+                    const [p0,p1,p2,p3] = [pool[i],pool[j],pool[k],pool[l]];
+                    evaluate([p0,p1],[p2,p3],wCost); evaluate([p0,p2],[p1,p3],wCost); evaluate([p0,p3],[p1,p2],wCost);
+                }
+            } else {
+                for(let i=0; i<pool.length-1; i++) for(let j=i+1; j<pool.length; j++) evaluate([pool[i]],[pool[j]], WEIGHTS.WAIT_INDEX*(i+j));
+            }
+            if(!best) return null;
+            return { id: uid(), type: matchType, t1Ids: best.t1.map(p=>p.id), t2Ids: best.t2.map(p=>p.id), score1: null, score2: null };
+        }
+
+        function fillOpenCourts(specNum = null) {
+            syncCourtSlots();
+            let assigned = 0;
+            for (const slot of activeCourts) {
+                if (specNum !== null && slot.courtNum !== specNum) continue;
+                if (slot.match) continue;
+                const match = selectOptimalMatch(getPlayingPlayerIds());
+                if (!match) break;
+                slot.match = match;
+                assigned++;
+            }
+            if(assigned===0 && specNum!==null) alert("Not enough Ready players on bench.");
+            saveData(true); renderApp();
+        }
+
+        function reshuffleCourt(courtNum) {
+            const slot = activeCourts.find(c => c.courtNum === courtNum);
+            if(!slot) return;
+            const replacement = selectOptimalMatch(getPlayingPlayerIds(courtNum));
+            if(!replacement) { alert('No alternative players ready.'); return; }
+            slot.match = replacement;
+            saveData(true); renderApp();
+        }
+
+        function getOnDeckQueue(max = 2) {
+            const busy = getPlayingPlayerIds();
+            const vG = new Map(), vW = new Map(), q = [];
+            for (let i = 0; i < max; i++) {
+                const m = selectOptimalMatch(busy, vG, vW);
+                if (!m) break;
+                q.push(m);
+                [...m.t1Ids, ...m.t2Ids].forEach(id => { busy.add(id); vG.set(id, (vG.get(id)||0)+1); vW.set(id, playSequence+i+1); });
+            }
+            return q;
+        }
+
+        function submitCourtScore(courtNum) {
+            const slot = activeCourts.find(c => c.courtNum === courtNum);
+            if (!slot || !slot.match) return;
+            const m = slot.match;
+            const s1 = parseInt(document.getElementById(`score1-${courtNum}`).value);
+            const s2 = parseInt(document.getElementById(`score2-${courtNum}`).value);
+            if (isNaN(s1) || isNaN(s2) || s1 < 0 || s2 < 0 || s1 === s2) { alert('Enter valid non-tied scores.'); return; }
+
+            const getR = ids => ids.reduce((s, id) => s + (players.find(x=>x.id===id)?.rating||3.5), 0)/ids.length;
+            const expected = 1 / (1 + Math.pow(10, (getR(m.t2Ids) - getR(m.t1Ids)) / 1.25));
+            const actual = s1 > s2 ? 1 : 0;
+            const pdMult = 1 + (Math.min(Math.abs(s1 - s2), 11) / 11);
+
+            playSequence++;
+            const apply = (ids, exp, act, pd) => {
+                ids.forEach(id => {
+                    const p = players.find(x=>x.id===id); if(!p) return;
+                    const delta = (p.verified ? VERIFIED_K : BASE_K) * pdMult * (act - exp);
+                    p.rating = Math.min(8.0, Math.max(2.0, p.rating + delta));
+                    p.matchesPlayed = (p.matchesPlayed||0)+1;
+                    p.sessionMatches = (p.sessionMatches||0)+1;
+                    p.sessionWins = (p.sessionWins||0) + act;
+                    p.sessionPointDiff = (p.sessionPointDiff||0) + pd;
+                    p.lastPlayedOrder = playSequence;
+                });
+            };
+            apply(m.t1Ids, expected, actual, s1 - s2);
+            apply(m.t2Ids, 1 - expected, 1 - actual, s2 - s1);
+            
+            m.score1 = s1; m.score2 = s2;
+            m.sessionName = document.getElementById('sessionName').value || 'Open Play';
+            m.sessionDate = document.getElementById('sessionDate').value || '';
+            sessionMatches.push(m);
+            historicalMatches.push(m);
+            slot.match = null;
+            fillOpenCourts(courtNum);
+        }
+
+        // --- 3. QM CONTROLS & UI STATE ---
         function switchTab(tab) {
             activeTab = tab;
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById(`view-${tab}`).classList.add('active');
-
-            const navIds = ['nav-dashboard', 'nav-history', 'nav-players', 'nav-leaderboard'];
-            navIds.forEach(id => {
-                const el = document.getElementById(id);
-                el.classList.remove('bg-indigo-600', 'text-white');
-                el.classList.add('hover:bg-slate-800', 'text-slate-300');
+            
+            ['dashboard', 'history', 'players', 'leaderboard'].forEach(t => {
+                const nav = document.getElementById(`nav-${t}`);
+                if(nav) {
+                    if (t === tab) { nav.classList.add('bg-indigo-600', 'text-white'); nav.classList.remove('hover:bg-slate-800', 'text-slate-300'); }
+                    else { nav.classList.remove('bg-indigo-600', 'text-white'); nav.classList.add('hover:bg-slate-800', 'text-slate-300'); }
+                }
+                const mob = document.getElementById(`mob-nav-${t}`);
+                if(mob) {
+                    if (t === tab) { mob.classList.add('text-indigo-600'); mob.classList.remove('text-slate-400'); }
+                    else { mob.classList.remove('text-indigo-600'); mob.classList.add('text-slate-400'); }
+                }
             });
-            document.getElementById(`nav-${tab}`).classList.remove('hover:bg-slate-800', 'text-slate-300');
-            document.getElementById(`nav-${tab}`).classList.add('bg-indigo-600', 'text-white');
-
-            const mobNavIds = ['mob-nav-dashboard', 'mob-nav-history', 'mob-nav-players', 'mob-nav-leaderboard'];
-            mobNavIds.forEach(id => {
-                const el = document.getElementById(id);
-                el.classList.remove('text-indigo-600', 'text-slate-400');
-                el.classList.add('text-slate-400');
-                el.querySelector('i').classList.replace('ph-fill', 'ph');
-                el.querySelector('span').classList.replace('font-semibold', 'font-medium');
-            });
-            const activeMob = document.getElementById(`mob-nav-${tab}`);
-            activeMob.classList.remove('text-slate-400');
-            activeMob.classList.add('text-indigo-600');
-            activeMob.querySelector('i').classList.replace('ph', 'ph-fill');
-            activeMob.querySelector('span').classList.replace('font-medium', 'font-semibold');
-
-            const titles = { dashboard: 'Match Dashboard', history: 'Global Match History', players: 'Player Database', leaderboard: 'Leaderboard' };
+            const titles = { dashboard: 'Match Dashboard', history: 'Match History', players: 'Player Database', leaderboard: 'Leaderboard' };
             document.getElementById('pageTitle').innerText = titles[tab];
-
+            
+            if(tab === 'dashboard') document.getElementById('qmControls').classList.remove('hidden');
+            else document.getElementById('qmControls').classList.add('hidden');
+            
             renderApp();
         }
 
+        function changeCourtCount(delta) {
+            numCourts = Math.min(6, Math.max(1, numCourts + delta));
+            document.getElementById('courtCountDisplay').textContent = numCourts;
+            syncCourtSlots(); saveData(true); renderApp();
+        }
         function setMatchType(type) {
             matchType = type;
-            document.getElementById('btn-singles').className = type === 'singles' ? 'px-3 md:px-4 py-1.5 rounded text-sm font-medium bg-white text-indigo-600 shadow-sm' : 'px-3 md:px-4 py-1.5 rounded text-sm font-medium text-slate-500 hover:text-slate-800';
-            document.getElementById('btn-doubles').className = type === 'doubles' ? 'px-3 md:px-4 py-1.5 rounded text-sm font-medium bg-white text-indigo-600 shadow-sm' : 'px-3 md:px-4 py-1.5 rounded text-sm font-medium text-slate-500 hover:text-slate-800';
-            saveData();
+            document.getElementById('btn-singles').className = type==='singles'?'px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm':'px-3 py-1.5 rounded text-slate-500';
+            document.getElementById('btn-doubles').className = type==='doubles'?'px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm':'px-3 py-1.5 rounded text-slate-500';
+            saveData(true);
+        }
+        function toggleSessionMeta() { document.getElementById('sessionMetaDrawer').classList.toggle('hidden'); }
+
+        function setLeaderboardMode(mode) {
+            leaderboardMode = mode;
+            document.getElementById('btn-lb-global').className = mode === 'global' ? 'px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm' : 'px-3 py-1.5 rounded text-slate-500';
+            document.getElementById('btn-lb-session').className = mode === 'session' ? 'px-3 py-1.5 rounded bg-white text-indigo-600 shadow-sm' : 'px-3 py-1.5 rounded text-slate-500';
+            renderLeaderboard();
+        }
+        function setBenchFilter(f) {
+            benchFilter = f;
+            ['checked','resting','unpaid','all'].forEach(x => {
+                document.getElementById(`filter-${x}`).className = x===f?'px-3 py-1 rounded-full bg-indigo-600 text-white whitespace-nowrap':'px-3 py-1 rounded-full bg-slate-100 text-slate-600 whitespace-nowrap';
+            });
+            renderBenchDrawer();
         }
 
-        // --- EDIT & DELETE PLAYER LOGIC ---
-        function deletePlayer(id) {
-            const p = players.find(x => x.id === id);
-            if(!p) return;
-            if (confirm(`Are you sure you want to permanently delete "${p.name}"? They will be removed from future matches, but past match records will be safely preserved.`)) {
-                players = players.filter(x => x.id !== id);
-                activeSessionIds.delete(id);
-                saveData();
-                renderApp();
+        function cyclePlayerState(id) {
+            const p = players.find(x=>x.id===id); if(!p) return;
+            if (getPlayingPlayerIds().has(id)) { alert('Player is currently on a live court.'); return; }
+            const next = { ready: 'resting', resting: 'out', out: 'ready' };
+            p.sessionState = next[p.sessionState || 'ready'] || 'ready';
+            if (p.sessionState === 'ready' && !p.lastPlayedOrder) p.lastPlayedOrder = 0;
+            saveData(true); renderApp();
+        }
+        function togglePlayerPaid(id) {
+            const p = players.find(x=>x.id===id); if(!p) return;
+            p.paid = !p.paid; saveData(true); renderBenchDrawer();
+        }
+
+        function quickAddWalkIn() {
+            const inp = document.getElementById('rosterFilterInput');
+            const rInp = document.getElementById('walkInRating');
+            const name = inp.value.trim();
+            if(!name) return;
+            let r = parseFloat(rInp.value); if(isNaN(r) || r<2 || r>8) r = 3.5;
+            players.unshift({
+                id: uid(), name, rating: r, verified: false, matchesPlayed: 0,
+                sessionState: 'ready', paid: false, sessionMatches: 0, sessionWins: 0, sessionPointDiff: 0, lastPlayedOrder: 0
+            });
+            inp.value = ''; rInp.value = ''; saveData(true); renderApp();
+        }
+
+        function endSession() {
+            if(!confirm("End session? All matches are saved globally. Dashboard will reset.")) return;
+            sessionMatches = []; activeCourts = []; syncCourtSlots();
+            players.forEach(p => {
+                p.sessionState = 'ready'; p.sessionMatches = 0; p.sessionWins = 0;
+                p.sessionPointDiff = 0; p.lastPlayedOrder = 0; p.paid = false;
+            });
+            document.getElementById('sessionName').value = '';
+            document.getElementById('sessionLocation').value = '';
+            document.getElementById('sessionDate').valueAsDate = new Date();
+            saveData(true); switchTab('history');
+        }
+
+        // --- 4. CSV (RFC4180) & DATA MGMT ---
+        function csvEscape(val) { const s = String(val??''); return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+        function parseCSV(line) {
+            const out = []; let cur = '', inQ = false;
+            for(let i=0; i<line.length; i++) {
+                const c = line[i];
+                if(inQ) { if(c==='"' && line[i+1]==='"') { cur+='"'; i++; } else if(c==='"') inQ=false; else cur+=c; }
+                else { if(c==='"') inQ=true; else if(c===',') { out.push(cur); cur=''; } else cur+=c; }
             }
+            out.push(cur); return out;
         }
 
+        function exportCSV() {
+            const lines = ['---PLAYERS---', 'ID,Name,Rating,MatchesPlayed,Verified,Paid',
+                ...players.map(p => [csvEscape(p.id), csvEscape(p.name), (p.rating||3.5).toFixed(3), p.matchesPlayed||0, !!p.verified, !!p.paid].join(',')),
+                '---MATCHES---', 'ID,SessionName,SessionDate,Type,T1,T2,Score1,Score2',
+                ...historicalMatches.map(m => [csvEscape(m.sessionName), csvEscape(m.sessionDate), csvEscape(m.type), csvEscape(m.t1Ids.join('|')), csvEscape(m.t2Ids.join('|')), m.score1, m.score2].join(','))];
+            const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a'); link.href = url; link.download = `PaddleRank_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            setTimeout(()=>URL.revokeObjectURL(url),1000);
+        }
+
+        function importCSV(e) {
+            const file = e.target.files[0]; if(!file) return;
+            const r = new FileReader();
+            r.onload = ev => {
+                const rows = ev.target.result.split(/\r?\n/);
+                let mode = 'PLAYERS', pC = 0, mC = 0;
+                for(const r of rows) {
+                    const row = r.trim(); if(!row) continue;
+                    if(row==='---PLAYERS---'){mode='PLAYERS'; continue;} if(row==='---MATCHES---'){mode='MATCHES'; continue;}
+                    if(row.startsWith('ID,Name') || row.startsWith('ID,Session')) continue;
+                    const c = parseCSV(row);
+                    if(mode==='PLAYERS' && c.length>=5) {
+                        const existing = players.find(x=>x.id===c[0]);
+                        if(existing) { existing.name=c[1]; existing.rating=parseFloat(c[2])||3.5; existing.matchesPlayed=parseInt(c[3])||0; existing.verified=c[4]==='true'; }
+                        else { players.push({ id:c[0]||uid(), name:c[1], rating:parseFloat(c[2])||3.5, matchesPlayed:parseInt(c[3])||0, verified:c[4]==='true', sessionState:'ready', paid:false, sessionMatches:0, sessionWins:0, sessionPointDiff:0 }); }
+                        pC++;
+                    } else if(mode==='MATCHES' && c.length>=8) {
+                        historicalMatches.push({ sessionName:c[1], sessionDate:c[2], type:c[3], t1Ids:c[4].split('|'), t2Ids:c[5].split('|'), score1:parseInt(c[6]), score2:parseInt(c[7]) });
+                        mC++;
+                    }
+                }
+                e.target.value=''; saveData(true); renderApp(); alert(`Imported ${pC} players, ${mC} matches.`);
+            }; r.readAsText(file);
+        }
+
+        function addPlayer() {
+            const n = document.getElementById('newPlayerName').value.trim();
+            let r = parseFloat(document.getElementById('newPlayerRating').value);
+            const v = document.getElementById('newPlayerVerified').checked;
+            if(!n) return; if(isNaN(r) || r<2 || r>8) r=3.5;
+            players.push({ id:uid(), name:n, rating:r, verified:v, matchesPlayed:0, sessionState:'ready', paid:false, sessionMatches:0, sessionWins:0, sessionPointDiff:0 });
+            document.getElementById('newPlayerName').value=''; document.getElementById('newPlayerRating').value=''; document.getElementById('newPlayerVerified').checked=false;
+            saveData(true); renderApp();
+        }
+        function deletePlayer(id) {
+            if(!confirm("Permanently delete player?")) return;
+            players = players.filter(x=>x.id!==id); saveData(true); renderApp();
+        }
         function openEditModal(id) {
-            const p = players.find(x => x.id === id);
-            if(!p) return;
+            const p = players.find(x=>x.id===id); if(!p) return;
             editingPlayerId = id;
             document.getElementById('editPlayerName').value = p.name;
             document.getElementById('editPlayerRating').value = p.rating.toFixed(3);
             document.getElementById('editPlayerVerified').checked = !!p.verified;
             document.getElementById('editModal').classList.remove('hidden');
         }
-
-        function closeEditModal() {
-            editingPlayerId = null;
-            document.getElementById('editModal').classList.add('hidden');
-        }
-
+        function closeEditModal() { editingPlayerId=null; document.getElementById('editModal').classList.add('hidden'); }
         function saveEditModal() {
             if(!editingPlayerId) return;
-            const p = players.find(x => x.id === editingPlayerId);
-            if(!p) return;
-            
-            const newName = document.getElementById('editPlayerName').value.trim();
-            const newRating = parseFloat(document.getElementById('editPlayerRating').value);
-            const newVerified = document.getElementById('editPlayerVerified').checked;
-            
-            if(newName) p.name = newName;
-            if(!isNaN(newRating) && newRating >= 2.0 && newRating <= 8.0) {
-                p.rating = newRating;
-            }
-            p.verified = newVerified;
-            
-            closeEditModal();
-            saveData();
-            renderApp();
+            const p = players.find(x=>x.id===editingPlayerId); if(!p) return;
+            const n = document.getElementById('editPlayerName').value.trim();
+            const r = parseFloat(document.getElementById('editPlayerRating').value);
+            if(n) p.name = n; if(!isNaN(r) && r>=2 && r<=8) p.rating = r;
+            p.verified = document.getElementById('editPlayerVerified').checked;
+            closeEditModal(); saveData(true); renderApp();
         }
 
-        // --- SESSION LOGIC ---
-        function pushMatchesToHistory() {
-            if (currentRoundMatches.length === 0) return;
-            const sName = document.getElementById('sessionName').value || 'Unnamed Session';
-            const sDate = document.getElementById('sessionDate').value || '';
-            const sLocation = document.getElementById('sessionLocation').value || '';
-
-            currentRoundMatches.forEach(m => {
-                if(m.completed) {
-                    m.sessionName = sName;
-                    m.sessionDate = sDate;
-                    m.sessionLocation = sLocation;
-                    historicalMatches.push(m);
-                }
-            });
-            currentRoundMatches = currentRoundMatches.filter(m => !m.completed);
-            saveData();
-        }
-
-        function endSession() {
-            if (!confirm("Are you sure you want to end the current session? This will clear the dashboard and save all matches to History.")) return;
-
-            pushMatchesToHistory();
-            currentRoundMatches = []; 
-
-            activeSessionIds.clear();
-            currentByes = [];
-            roundCounter = 1;
-            document.getElementById('roundCounterBadge').innerText = roundCounter;
-
-            document.getElementById('sessionName').value = '';
-            document.getElementById('sessionLocation').value = '';
-            document.getElementById('sessionDate').valueAsDate = new Date();
-
-            players.forEach(p => {
-                p.sessionMatches = 0;
-                p.sessionWins = 0;
-                p.sessionPointDiff = 0;
-                p.sessionRatingChange = 0;
-            });
-
-            saveData();
-            renderApp();
-            switchTab('history');
-        }
-
-        // --- CSV IMPORT / EXPORT ---
-        function exportCSV() {
-            if(players.length === 0 && historicalMatches.length === 0) {
-                alert("Nothing to export.");
-                return;
-            }
-            let csvContent = "data:text/csv;charset=utf-8,\n";
-            
-            csvContent += "---PLAYERS---\n";
-            csvContent += "ID,Name,Rating,MatchesPlayed,Verified\n";
-            players.forEach(p => {
-                csvContent += `${p.id},${p.name.replace(/,/g, '')},${p.rating},${p.matchesPlayed},${!!p.verified}\n`;
-            });
-            
-            csvContent += "---MATCHES---\n";
-            csvContent += "ID,SessionName,SessionDate,Round,Type,T1,T2,Score1,Score2,Deltas\n";
-            historicalMatches.forEach(m => {
-                const t1Ids = m.t1.map(p => p.id).join('|');
-                const t2Ids = m.t2.map(p => p.id).join('|');
-                const sName = (m.sessionName || 'Unnamed').replace(/,/g, '');
-                const sDate = (m.sessionDate || '').replace(/,/g, '');
-                const deltaStr = m.deltas ? JSON.stringify(m.deltas).replace(/,/g, ';') : '{}'; 
-                
-                csvContent += `${m.id},${sName},${sDate},${m.round},${m.type},${t1Ids},${t2Ids},${m.score1},${m.score2},${deltaStr}\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `PaddleRank_Backup_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function importCSV(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const rows = text.split("\n");
-                let importedPlayers = 0;
-                let importedMatches = 0;
-                let mode = 'PLAYERS';
-
-                for(let i = 0; i < rows.length; i++) {
-                    const row = rows[i].trim();
-                    if(!row) continue;
-                    if(row === "---PLAYERS---") { mode = 'PLAYERS'; continue; }
-                    if(row === "---MATCHES---") { mode = 'MATCHES'; continue; }
-                    if(row.startsWith("ID,Name") || row.startsWith("ID,SessionName")) continue;
-
-                    const cols = row.split(",");
-                    if(mode === 'PLAYERS' && cols.length >= 4) {
-                        const id = cols[0].trim();
-                        const name = cols[1].trim();
-                        const rating = parseFloat(cols[2]);
-                        const matchesPlayed = parseInt(cols[3]);
-                        const isVerified = cols[4] ? cols[4].trim() === 'true' : false;
-
-                        const existing = players.find(p => p.id === id);
-                        if (existing) {
-                            existing.rating = rating;
-                            existing.matchesPlayed = matchesPlayed;
-                            existing.verified = isVerified;
-                        } else {
-                            players.push({ id, name, rating, matchesPlayed, verified: isVerified, sessionMatches: 0, sessionWins: 0, sessionPointDiff: 0, sessionRatingChange: 0 });
-                        }
-                        importedPlayers++;
-                    } 
-                    else if (mode === 'MATCHES' && cols.length >= 9) {
-                        const id = cols[0].trim();
-                        if(historicalMatches.find(m => m.id == id)) continue;
-
-                        const sessionName = cols[1].trim();
-                        const sessionDate = cols[2].trim();
-                        const round = parseInt(cols[3]);
-                        const type = cols[4].trim();
-                        const t1Ids = cols[5].split('|');
-                        const t2Ids = cols[6].split('|');
-                        const score1 = parseInt(cols[7]);
-                        const score2 = parseInt(cols[8]);
-                        
-                        let deltas = {};
-                        if(cols[9]) {
-                            try { deltas = JSON.parse(cols[9].replace(/;/g, ',')); } catch(e){}
-                        }
-
-                        const t1 = t1Ids.map(tid => players.find(p => p.id === tid)).filter(Boolean);
-                        const t2 = t2Ids.map(tid => players.find(p => p.id === tid)).filter(Boolean);
-
-                        if(t1.length > 0 && t2.length > 0) {
-                            historicalMatches.push({ id, sessionName, sessionDate, round, type, t1, t2, score1, score2, deltas, completed: true });
-                            importedMatches++;
-                        }
-                    }
-                }
-                alert(`Successfully imported ${importedPlayers} players and ${importedMatches} matches.`);
-                event.target.value = ''; 
-                saveData();
-                renderApp();
-            };
-            reader.readAsText(file);
-        }
-
-        // --- PLAYER LOGIC ---
-        function handleEnterKey(event) { if (event.key === 'Enter') addPlayer(); }
-
-        function addPlayer() {
-            const nameInput = document.getElementById('newPlayerName');
-            const ratingInput = document.getElementById('newPlayerRating');
-            const verifiedInput = document.getElementById('newPlayerVerified');
-            
-            const name = nameInput.value.trim();
-            if (!name) return;
-
-            let customRating = parseFloat(ratingInput.value);
-            if (isNaN(customRating) || customRating < 2.0 || customRating > 8.0) {
-                customRating = STARTING_RATING; 
-            }
-
-            players.push({ 
-                id: Date.now().toString(), 
-                name: name, 
-                rating: customRating, 
-                verified: verifiedInput.checked,
-                matchesPlayed: 0, 
-                sessionMatches: 0, 
-                sessionWins: 0, 
-                sessionPointDiff: 0, 
-                sessionRatingChange: 0 
-            });
-            
-            nameInput.value = '';
-            ratingInput.value = '';
-            verifiedInput.checked = false;
-            
-            saveData();
-            renderApp();
-        }
-
-        function toggleSession(playerId) {
-            if (activeSessionIds.has(playerId)) activeSessionIds.delete(playerId);
-            else activeSessionIds.add(playerId);
-            saveData();
-            renderApp();
-        }
-
-        // --- MATCH GENERATION ---
-        function getHistoryPenalty(id1, id2) {
-            let count = 0;
-            const allMatches = historicalMatches.concat(currentRoundMatches);
-            for(let m of allMatches) {
-                const matchPlayers = [...m.t1, ...m.t2].map(p => p.id);
-                if (matchPlayers.includes(id1) && matchPlayers.includes(id2)) count++;
-            }
-            return count;
-        }
-
-        function generateRound() {
-            const matchSize = matchType === 'doubles' ? 4 : 2;
-            let sessionPlayers = players.filter(p => activeSessionIds.has(p.id));
-            
-            if (sessionPlayers.length < matchSize) {
-                alert(`Need at least ${matchSize} checked-in players to generate a ${matchType} match.`);
-                return;
-            }
-
-            if (currentRoundMatches.length > 0 && currentRoundMatches.some(m => !m.completed)) {
-                alert("Please submit all scores for the current round before generating the next one.");
-                return;
-            }
-
-            if (currentRoundMatches.length > 0) {
-                pushMatchesToHistory();
-                roundCounter++;
-                document.getElementById('roundCounterBadge').innerText = roundCounter;
-            }
-
-            const numMatches = Math.floor(sessionPlayers.length / matchSize);
-            const playersNeeded = numMatches * matchSize;
-
-            sessionPlayers.sort((a, b) => {
-                if (a.sessionMatches !== b.sessionMatches) return a.sessionMatches - b.sessionMatches;
-                return b.rating - a.rating;
-            });
-
-            let selectedForPlay = sessionPlayers.slice(0, playersNeeded);
-            currentByes = sessionPlayers.slice(playersNeeded);
-            let available = [...selectedForPlay].sort((a, b) => b.rating - a.rating);
-
-            while (available.length >= matchSize) {
-                let pool = [available.shift()]; 
-                while (pool.length < matchSize) {
-                    let bestIdx = -1, minPenalty = Infinity;
-                    for (let i = 0; i < available.length; i++) {
-                        let penalty = 0;
-                        for (let p of pool) penalty += getHistoryPenalty(available[i].id, p.id);
-                        if (penalty < minPenalty) { minPenalty = penalty; bestIdx = i; }
-                    }
-                    pool.push(available.splice(bestIdx, 1)[0]);
-                }
-
-                let t1, t2;
-                if (matchType === 'doubles') {
-                    const configs = [
-                        [[pool[0], pool[1]], [pool[2], pool[3]]],
-                        [[pool[0], pool[2]], [pool[1], pool[3]]],
-                        [[pool[0], pool[3]], [pool[1], pool[2]]]
-                    ];
-                    let bestConfig = configs[0], minDiff = Infinity;
-                    for (let c of configs) {
-                        let diff = Math.abs((c[0][0].rating + c[0][1].rating) - (c[1][0].rating + c[1][1].rating));
-                        if (diff < minDiff) { minDiff = diff; bestConfig = c; }
-                    }
-                    t1 = bestConfig[0]; t2 = bestConfig[1];
-                } else {
-                    t1 = [pool[0]]; t2 = [pool[1]];
-                }
-
-                currentRoundMatches.push({
-                    id: Date.now() + Math.random(),
-                    round: roundCounter,
-                    type: matchType,
-                    t1: t1,
-                    t2: t2,
-                    score1: null,
-                    score2: null,
-                    deltas: {},
-                    completed: false
-                });
-            }
-            saveData();
-            renderApp();
-            if(activeTab !== 'dashboard') switchTab('dashboard');
-        }
-
-        // --- MATH & RATING UPDATE ---
-        function submitScore(matchId) {
-            const match = currentRoundMatches.find(m => m.id === matchId);
-            const s1 = parseInt(document.getElementById(`score1-${matchId}`).value);
-            const s2 = parseInt(document.getElementById(`score2-${matchId}`).value);
-
-            if (isNaN(s1) || isNaN(s2) || s1 === s2) {
-                alert("Please enter valid, non-tied scores.");
-                return;
-            }
-
-            const getTeamAvg = (team) => team.reduce((sum, p) => sum + players.find(x => x.id === p.id).rating, 0) / team.length;
-            const t1Rating = getTeamAvg(match.t1);
-            const t2Rating = getTeamAvg(match.t2);
-
-            const expectedT1 = 1 / (1 + Math.pow(10, ((t2Rating - t1Rating) / 400)));
-            const expectedT2 = 1 / (1 + Math.pow(10, ((t1Rating - t2Rating) / 400)));
-            const actualT1 = s1 > s2 ? 1 : 0;
-            const actualT2 = s2 > s1 ? 1 : 0;
-
-            const pointDiff = Math.abs(s1 - s2);
-            const pdMult = 1 + (pointDiff / 11);
-
-            if(!match.deltas) match.deltas = {};
-
-            const applyIndividualChange = (team, expected, actual, pd) => {
-                team.forEach(p => {
-                    let player = players.find(x => x.id === p.id);
-                    const playerBaseK = player.verified ? VERIFIED_K : BASE_K;
-                    const playerK = playerBaseK * pdMult;
-                    const change = playerK * (actual - expected);
-                    
-                    match.deltas[p.id] = change; 
-                    
-                    player.rating = Math.max(2.0, player.rating + change);
-                    player.matchesPlayed++;
-                    
-                    player.sessionMatches = (player.sessionMatches || 0) + 1;
-                    player.sessionWins = (player.sessionWins || 0) + (actual === 1 ? 1 : 0);
-                    player.sessionPointDiff = (player.sessionPointDiff || 0) + pd;
-                    player.sessionRatingChange = (player.sessionRatingChange || 0) + change;
-                });
-            };
-
-            applyIndividualChange(match.t1, expectedT1, actualT1, s1 - s2);
-            applyIndividualChange(match.t2, expectedT2, actualT2, s2 - s1);
-
-            match.score1 = s1;
-            match.score2 = s2;
-            match.completed = true;
-
-            saveData();
-            renderApp();
-        }
-
-        // --- RENDER PIPELINE ---
+        // --- 5. RENDERERS ---
         function renderApp() {
-            if (activeTab === 'leaderboard') renderLeaderboard();
-            if (activeTab === 'dashboard') { renderSessionRoster(); renderMatches(); }
-            if (activeTab === 'players') renderPlayers();
-            if (activeTab === 'history') renderHistory();
+            if(activeTab === 'dashboard') { renderCourts(); renderOnDeck(); renderBenchDrawer(); }
+            if(activeTab === 'players') renderPlayers();
+            if(activeTab === 'leaderboard') renderLeaderboard();
+            if(activeTab === 'history') renderHistory();
         }
 
-        function renderSessionRoster() {
-            const container = document.getElementById('sessionRoster');
-            if (players.length === 0) {
-                container.innerHTML = '<span class="text-sm text-slate-400 italic">No players in database. Add players in the DB tab.</span>';
-                return;
-            }
-            container.innerHTML = players.map(p => {
-                const isActive = activeSessionIds.has(p.id);
-                const bgClass = isActive ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300';
-                const icon = isActive ? '<i class="ph-fill ph-check-circle text-indigo-600 text-lg md:text-xl"></i>' : '<i class="ph ph-circle text-lg md:text-xl"></i>';
-                const badge = p.verified ? '<i class="ph-fill ph-seal-check text-blue-500" title="Verified DUPR"></i>' : '';
+        function nameBadge(id) {
+            const p = players.find(x=>x.id===id); if(!p) return 'Unknown';
+            return `${esc(p.name)} ${p.verified ? '🔵' : ''}`;
+        }
+
+        function renderCourts() {
+            const grid = document.getElementById('activeCourtsGrid');
+            if(activeCourts.length===0) { grid.innerHTML = '<div class="text-sm text-slate-400">No active courts.</div>'; return; }
+            grid.innerHTML = activeCourts.map(c => {
+                if(!c.match) return `
+                    <div class="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center min-h-[140px]">
+                        <span class="text-xs font-bold text-slate-400 uppercase mb-3">Court ${c.courtNum} - Open</span>
+                        <button onclick="fillOpenCourts(${c.courtNum})" class="bg-indigo-100 text-indigo-700 font-bold px-4 py-2 rounded-lg text-sm transition-colors hover:bg-indigo-200">Fill Court</button>
+                    </div>`;
+                const m = c.match;
+                const renderSide = ids => `<div class="flex flex-col gap-1 flex-1 text-center md:text-left">${ids.map(id => `<div class="text-xs sm:text-sm font-bold text-slate-800">${nameBadge(id)}</div>`).join('')}</div>`;
                 return `
-                    <button onclick="toggleSession('${p.id}')" class="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full border shadow-sm transition-colors ${bgClass}">
-                        ${icon} <span class="font-medium flex items-center gap-1 text-xs md:text-sm">${p.name} ${badge} <span class="text-[9px] md:text-[10px] bg-white bg-opacity-50 px-1 md:px-1.5 py-0.5 rounded ml-1 opacity-70">${p.sessionMatches || 0}g</span></span>
-                    </button>
-                `;
+                    <div class="bg-white border border-slate-200 shadow-sm rounded-xl p-3 sm:p-4 flex flex-col">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                            <span class="text-[10px] sm:text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Court ${c.courtNum}</span>
+                            <button onclick="reshuffleCourt(${c.courtNum})" class="text-[10px] sm:text-xs text-slate-500 hover:text-slate-800 bg-slate-100 px-2 py-1 rounded font-bold">↻ Swap</button>
+                        </div>
+                        <div class="flex justify-between items-center gap-2 mb-2">
+                            ${renderSide(m.t1Ids)}
+                            <input type="number" id="score1-${c.courtNum}" class="w-12 h-10 sm:w-14 sm:h-12 text-center text-lg font-bold border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                        </div>
+                        <div class="text-center text-[10px] font-bold text-slate-300 mb-2">VS</div>
+                        <div class="flex justify-between items-center gap-2 mb-4">
+                            ${renderSide(m.t2Ids)}
+                            <input type="number" id="score2-${c.courtNum}" class="w-12 h-10 sm:w-14 sm:h-12 text-center text-lg font-bold border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50">
+                        </div>
+                        <button onclick="submitCourtScore(${c.courtNum})" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 sm:py-2.5 rounded-lg text-sm shadow-sm transition-transform active:scale-95">Finish & Rotate</button>
+                    </div>`;
+            }).join('');
+        }
+
+        function renderOnDeck() {
+            const list = document.getElementById('onDeckList');
+            const q = getOnDeckQueue(2);
+            document.getElementById('readyCountBadge').textContent = `${players.filter(p=>p.sessionState==='ready').length} Ready`;
+            if(q.length === 0) { list.innerHTML = '<div class="text-xs text-amber-700 italic">Not enough ready players to form next match.</div>'; return; }
+            list.innerHTML = q.map((m, i) => `
+                <div class="bg-white/70 border border-amber-200 rounded p-2 text-xs font-bold text-slate-700 shadow-sm">
+                    <span class="text-amber-600 mr-1">#${i+1}</span> 
+                    ${m.t1Ids.map(nameBadge).join(' & ')} <span class="text-amber-400 mx-1">vs</span> ${m.t2Ids.map(nameBadge).join(' & ')}
+                </div>
+            `).join('');
+        }
+
+        function renderBenchDrawer() {
+            const list = document.getElementById('benchRosterList');
+            const fStr = (document.getElementById('rosterFilterInput').value || '').toLowerCase();
+            let pool = players;
+            if (benchFilter === 'checked') pool = pool.filter(p => p.sessionState !== 'out');
+            else if (benchFilter === 'resting') pool = pool.filter(p => p.sessionState === 'resting');
+            else if (benchFilter === 'unpaid') pool = pool.filter(p => p.sessionState !== 'out' && !p.paid);
+            if (fStr) pool = pool.filter(p => p.name.toLowerCase().includes(fStr));
+
+            pool.sort((a, b) => {
+                if (a.sessionState !== b.sessionState) return a.sessionState === 'ready' ? -1 : 1;
+                return (a.lastPlayedOrder || 0) - (b.lastPlayedOrder || 0);
+            });
+
+            const attendees = players.filter(p => p.sessionState !== 'out');
+            document.getElementById('paidSummaryBadge').textContent = `Paid: ${attendees.filter(p=>p.paid).length}/${attendees.length}`;
+
+            list.innerHTML = pool.map(p => {
+                const isPlaying = getPlayingPlayerIds().has(p.id);
+                let stateBtn = '';
+                if (isPlaying) { stateBtn = `<span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">On Court</span>`; }
+                else {
+                    const c = p.sessionState === 'ready' ? 'bg-emerald-100 text-emerald-800' : p.sessionState === 'resting' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500';
+                    const t = p.sessionState === 'ready' ? 'Ready' : p.sessionState === 'resting' ? 'Resting' : 'Out';
+                    stateBtn = `<button onclick="cyclePlayerState('${p.id}')" class="text-[10px] font-bold px-2 py-1 rounded ${c}">${t}</button>`;
+                }
+                const paidBtn = p.paid 
+                    ? `<button onclick="togglePlayerPaid('${p.id}')" class="text-[10px] font-bold bg-emerald-500 text-white px-2 py-1 rounded">₱ Paid</button>`
+                    : `<button onclick="togglePlayerPaid('${p.id}')" class="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded">Unpaid</button>`;
+
+                return `
+                    <div class="flex items-center justify-between py-2 sm:px-2 hover:bg-slate-50 transition-colors">
+                        <div class="flex flex-col">
+                            <span class="text-xs sm:text-sm font-bold text-slate-800">${esc(p.name)} ${p.verified?'🔵':''}</span>
+                            <span class="text-[10px] font-bold text-slate-400">R: ${p.rating.toFixed(3)} | ${p.sessionMatches||0}g</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${paidBtn}
+                            ${stateBtn}
+                        </div>
+                    </div>`;
             }).join('');
         }
 
         function renderPlayers() {
             const list = document.getElementById('playersList');
-            if(players.length === 0) {
-                list.innerHTML = '<li class="p-4 text-slate-400 text-center text-sm">No players in database yet.</li>';
-                return;
-            }
-            list.innerHTML = players.map(p => {
-                const badge = p.verified ? '<i class="ph-fill ph-seal-check text-blue-500 text-lg" title="Verified DUPR"></i>' : '';
-                return `
-                <li class="p-3 md:p-4 flex flex-col md:flex-row md:items-center justify-between hover:bg-slate-50 gap-3 md:gap-0">
+            if(players.length === 0) { list.innerHTML = '<li class="p-4 text-slate-400 text-center text-sm">No players in database.</li>'; return; }
+            list.innerHTML = players.map(p => `
+                <li class="p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between hover:bg-slate-50 gap-2 sm:gap-0">
                     <div class="flex items-center gap-3">
-                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
-                            ${p.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span class="font-medium flex items-center gap-1.5 text-sm md:text-base">${p.name} ${badge}</span>
+                        <div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">${p.name.charAt(0).toUpperCase()}</div>
+                        <span class="font-bold text-sm sm:text-base">${esc(p.name)} ${p.verified?'🔵':''}</span>
                     </div>
-                    
-                    <div class="flex items-center gap-4 justify-between md:justify-end ml-11 md:ml-0 border-t border-slate-100 md:border-none pt-2 md:pt-0">
-                        <span class="text-xs font-semibold text-slate-500 tracking-wide uppercase">RATING: <span class="text-slate-800">${p.rating.toFixed(3)}</span></span>
-                        
-                        <div class="flex items-center gap-1 border-l border-slate-200 pl-3">
-                            <button onclick="openEditModal('${p.id}')" class="text-slate-400 hover:text-indigo-600 bg-white hover:bg-indigo-50 h-8 w-8 rounded flex items-center justify-center transition-colors shadow-sm border border-slate-200" title="Edit Player">
-                                <i class="ph ph-pencil-simple text-lg"></i>
-                            </button>
-                            <button onclick="deletePlayer('${p.id}')" class="text-slate-400 hover:text-red-600 bg-white hover:bg-red-50 h-8 w-8 rounded flex items-center justify-center transition-colors shadow-sm border border-slate-200" title="Delete Player">
-                                <i class="ph ph-trash text-lg"></i>
-                            </button>
+                    <div class="flex items-center gap-4 justify-between sm:justify-end ml-11 sm:ml-0">
+                        <span class="text-[10px] sm:text-xs font-bold text-slate-500 tracking-wide uppercase">Rating: <span class="text-slate-800">${p.rating.toFixed(3)}</span></span>
+                        <div class="flex items-center gap-1">
+                            <button onclick="openEditModal('${p.id}')" class="text-slate-400 hover:text-indigo-600 bg-slate-100 px-2 py-1 rounded font-bold text-[10px] sm:text-xs">Edit</button>
+                            <button onclick="deletePlayer('${p.id}')" class="text-slate-400 hover:text-red-600 bg-slate-100 px-2 py-1 rounded font-bold text-[10px] sm:text-xs">Del</button>
                         </div>
                     </div>
-                </li>
-            `}).join('');
+                </li>`).join('');
         }
 
         function renderLeaderboard() {
-            const tbody = document.getElementById('leaderboardBody');
-            const sorted = [...players].sort((a, b) => b.rating - a.rating);
-            tbody.innerHTML = sorted.map((p, idx) => {
-                const badge = p.verified ? '<i class="ph-fill ph-seal-check text-blue-500" title="Verified DUPR"></i>' : '';
-                return `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 md:px-6 py-3 md:py-4 text-slate-500 font-medium text-sm md:text-base">#${idx + 1}</td>
-                    <td class="px-4 md:px-6 py-3 md:py-4 font-semibold flex items-center gap-1.5 text-sm md:text-base">
-                        ${(idx === 0 && p.matchesPlayed > 0) ? '<i class="ph-fill ph-crown text-yellow-500 text-lg"></i>' : ''} ${p.name} ${badge}
-                    </td>
-                    <td class="px-4 md:px-6 py-3 md:py-4 text-center">
-                        <span class="bg-indigo-100 text-indigo-700 px-2 md:px-3 py-1 rounded-full text-xs md:text-sm font-bold tracking-wide">${p.rating.toFixed(3)}</span>
-                    </td>
-                    <td class="px-4 md:px-6 py-3 md:py-4 text-center text-slate-500 text-sm md:text-base">${p.matchesPlayed}</td>
-                </tr>
-            `}).join('');
+            const tHead = document.getElementById('leaderboardHead');
+            const tBody = document.getElementById('leaderboardBody');
+
+            if (leaderboardMode === 'global') {
+                tHead.innerHTML = `
+                    <tr class="text-xs font-semibold text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                        <th class="px-4 py-3">Rank</th>
+                        <th class="px-4 py-3">Player</th>
+                        <th class="px-4 py-3 text-center">Rating</th>
+                        <th class="px-4 py-3 text-center">Matches</th>
+                    </tr>`;
+                
+                tBody.innerHTML = [...players].sort((a,b)=>b.rating-a.rating).map((p,i) => `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-slate-500 font-bold text-sm">#${i+1}</td>
+                        <td class="px-4 py-3 font-bold text-sm">${(i===0&&p.matchesPlayed>0)?'👑 ':''}${esc(p.name)} ${p.verified?'🔵':''}</td>
+                        <td class="px-4 py-3 text-center"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${p.rating.toFixed(3)}</span></td>
+                        <td class="px-4 py-3 text-center text-slate-500 text-sm font-bold">${p.matchesPlayed||0}</td>
+                    </tr>`).join('');
+            } else {
+                tHead.innerHTML = `
+                    <tr class="text-xs font-semibold text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                        <th class="px-4 py-3">Rank</th>
+                        <th class="px-4 py-3">Player</th>
+                        <th class="px-4 py-3 text-center">W-L</th>
+                        <th class="px-4 py-3 text-center">Pt Diff</th>
+                    </tr>`;
+                
+                const sessionPlayers = players.filter(p => (p.sessionMatches || 0) > 0 || p.sessionState !== 'out');
+                if (sessionPlayers.length === 0) {
+                    tBody.innerHTML = `<tr><td colspan="4" class="px-4 py-8 text-center text-slate-400 text-sm">No active players in current session.</td></tr>`;
+                    return;
+                }
+                
+                sessionPlayers.sort((a, b) => {
+                    const winsA = a.sessionWins || 0;
+                    const winsB = b.sessionWins || 0;
+                    if (winsA !== winsB) return winsB - winsA;
+                    const pdA = a.sessionPointDiff || 0;
+                    const pdB = b.sessionPointDiff || 0;
+                    return pdB - pdA;
+                });
+
+                tBody.innerHTML = sessionPlayers.map((p,i) => {
+                    const w = p.sessionWins || 0;
+                    const l = (p.sessionMatches || 0) - w;
+                    const pd = p.sessionPointDiff || 0;
+                    const pdStr = pd > 0 ? `+${pd}` : `${pd}`;
+                    const pdColor = pd > 0 ? 'text-emerald-600' : (pd < 0 ? 'text-red-500' : 'text-slate-500');
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    
+                    return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3 text-slate-500 font-bold text-sm">${medal}</td>
+                        <td class="px-4 py-3 font-bold text-sm">${esc(p.name)} ${p.verified?'🔵':''}</td>
+                        <td class="px-4 py-3 text-center font-bold text-slate-700">${w} - ${l}</td>
+                        <td class="px-4 py-3 text-center text-sm font-bold ${pdColor}">${pdStr}</td>
+                    </tr>`;
+                }).join('');
+            }
         }
 
         function renderHistory() {
             const container = document.getElementById('historyContainer');
-            
-            const allMatches = [...historicalMatches];
-            const sNameActive = document.getElementById('sessionName').value || 'Unnamed Session';
-            const sDateActive = document.getElementById('sessionDate').value || '';
-            
-            currentRoundMatches.forEach(m => {
-                if(m.completed) {
-                    allMatches.push({ ...m, sessionName: sNameActive, sessionDate: sDateActive });
-                }
+            if(historicalMatches.length === 0) { container.innerHTML = '<div class="text-center text-slate-400 py-10 text-sm">No match history.</div>'; return; }
+            const groups = {};
+            historicalMatches.forEach(m => {
+                const k = `${m.sessionName||'Open Play'}::${m.sessionDate||''}`;
+                if(!groups[k]) groups[k] = []; groups[k].push(m);
             });
-
-            if(allMatches.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-slate-400 py-10 flex flex-col items-center">
-                        <i class="ph ph-files text-4xl mb-2 opacity-50"></i>
-                        <p class="text-sm">No historical matches yet.</p>
-                    </div>`;
-                return;
-            }
-
-            const sessions = {};
-            allMatches.forEach(m => {
-                const sKey = `${m.sessionName || 'Unnamed Session'}::${m.sessionDate || 'Unknown Date'}`;
-                if(!sessions[sKey]) sessions[sKey] = { rounds: {}, matches: [] };
-                if(!sessions[sKey].rounds[m.round]) sessions[sKey].rounds[m.round] = [];
-                sessions[sKey].rounds[m.round].push(m);
-                sessions[sKey].matches.push(m);
-            });
-
-            container.innerHTML = Object.keys(sessions).map(sessionKey => {
-                const [name, date] = sessionKey.split('::');
-                const rounds = sessions[sessionKey].rounds;
-                const matches = sessions[sessionKey].matches;
+            
+            container.innerHTML = Object.keys(groups).map(k => {
+                const [n, d] = k.split('::');
+                const matches = groups[k];
                 
                 let pStats = {};
                 matches.forEach(m => {
                     const pd = m.score1 - m.score2;
-                    const w1 = m.score1 > m.score2 ? 1 : 0;
-                    
-                    const processTeam = (team, isT1) => {
-                        team.forEach(p => {
-                            if(!pStats[p.id]) pStats[p.id] = { name: p.name, w: 0, m: 0, pd: 0, delta: 0, verified: p.verified };
-                            pStats[p.id].m++;
-                            pStats[p.id].w += isT1 ? w1 : (1 - w1);
-                            pStats[p.id].pd += isT1 ? pd : -pd;
-                            if(m.deltas && m.deltas[p.id]) pStats[p.id].delta += m.deltas[p.id];
+                    const process = (ids, w, ptDiff) => {
+                        ids.forEach(id => {
+                            if(!pStats[id]) pStats[id] = { id, w: 0, m: 0, pd: 0 };
+                            pStats[id].m++;
+                            pStats[id].w += w;
+                            pStats[id].pd += ptDiff;
                         });
                     };
-                    processTeam(m.t1, true);
-                    processTeam(m.t2, false);
+                    process(m.t1Ids, m.score1 > m.score2 ? 1 : 0, pd);
+                    process(m.t2Ids, m.score2 > m.score1 ? 1 : 0, -pd);
                 });
-
+                
                 const sortedRecap = Object.values(pStats).sort((a,b) => {
                     if(b.w !== a.w) return b.w - a.w;
-                    if(b.pd !== a.pd) return b.pd - a.pd;
-                    return b.delta - a.delta;
+                    return b.pd - a.pd;
                 });
-
-                let sessionHtml = `
-                    <div class="mb-10 bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-6 shadow-sm">
-                        <div class="flex justify-between items-end mb-6 pb-3 border-b border-slate-200">
-                            <h4 class="font-bold text-slate-800 flex items-center gap-2 text-lg md:text-xl">
-                                <i class="ph-fill ph-calendar-check text-indigo-600"></i> ${name}
-                            </h4>
-                            <span class="text-xs md:text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">${date}</span>
-                        </div>
-                        
-                        <div class="mb-6">
-                            <h5 class="font-semibold text-slate-700 text-sm mb-3 px-1">Session Recap</h5>
-                            <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white shadow-sm">
-                                <table class="w-full text-left border-collapse min-w-full">
-                                    <thead>
-                                        <tr class="text-[10px] md:text-xs font-semibold text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
-                                            <th class="px-3 py-2 md:py-3 text-center">Rnk</th>
-                                            <th class="px-3 py-2 md:py-3">Player</th>
-                                            <th class="px-3 py-2 md:py-3 text-center">W-L</th>
-                                            <th class="px-3 py-2 md:py-3 text-center">+/-</th>
-                                            <th class="px-3 py-2 md:py-3 text-center">Pt Diff</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        ${sortedRecap.map((p, idx) => {
-                                            const changeColor = p.delta > 0 ? 'text-emerald-600' : (p.delta < 0 ? 'text-red-500' : 'text-slate-500');
-                                            const changeSign = p.delta > 0 ? '+' : '';
-                                            const pdColor = p.pd > 0 ? 'text-emerald-600' : (p.pd < 0 ? 'text-red-500' : 'text-slate-500');
-                                            const pdSign = p.pd > 0 ? '+' : '';
-                                            return `
-                                                <tr class="hover:bg-slate-50 transition-colors">
-                                                    <td class="px-3 py-2 md:py-3 text-center text-slate-500 font-medium text-xs md:text-sm">${idx + 1}</td>
-                                                    <td class="px-3 py-2 md:py-3 font-semibold text-xs md:text-sm text-slate-800 flex items-center gap-1">${p.name} ${p.verified ? '<i class="ph-fill ph-seal-check text-blue-500"></i>' : ''}</td>
-                                                    <td class="px-3 py-2 md:py-3 text-center text-xs md:text-sm text-slate-600 font-medium">${p.w}-${p.m - p.w}</td>
-                                                    <td class="px-3 py-2 md:py-3 text-center text-[10px] md:text-xs font-bold ${changeColor}">${changeSign}${p.delta.toFixed(3)}</td>
-                                                    <td class="px-3 py-2 md:py-3 text-center text-[10px] md:text-xs font-bold ${pdColor}">${pdSign}${p.pd}</td>
-                                                </tr>
-                                            `;
-                                        }).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <h5 class="font-semibold text-slate-700 text-sm mb-3 px-1">Match Log</h5>
-                        <div class="space-y-6">
-                `;
-
-                Object.keys(rounds).sort((a,b) => b - a).forEach(round => {
-                    sessionHtml += `
-                        <div class="space-y-3">
-                            <h6 class="font-semibold text-slate-500 text-[10px] md:text-xs uppercase tracking-wider ml-1">Round ${round}</h6>
-                            <div class="space-y-2">
-                                ${rounds[round].map(m => `
-                                    <div class="flex items-center justify-between p-3 md:p-4 rounded-lg border border-slate-200 bg-white text-xs md:text-sm shadow-sm hover:shadow-md transition-shadow">
-                                        <div class="flex-1 ${m.score1 > m.score2 ? 'font-bold text-slate-900' : 'text-slate-500'}">
-                                            ${m.t1.map(p=>p.name).join('<br class="md:hidden"> <span class="hidden md:inline">, </span>')}
-                                        </div>
-                                        <div class="px-4 font-mono font-bold text-slate-700 text-sm md:text-lg bg-slate-50 py-1 rounded-md border border-slate-100">${m.score1} - ${m.score2}</div>
-                                        <div class="flex-1 text-right ${m.score2 > m.score1 ? 'font-bold text-slate-900' : 'text-slate-500'}">
-                                            ${m.t2.map(p=>p.name).join('<br class="md:hidden"> <span class="hidden md:inline">, </span>')}
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                });
-
-                sessionHtml += `</div></div>`;
-                return sessionHtml;
-            }).join('');
-        }
-
-        function renderMatches() {
-            const container = document.getElementById('matchesContainer');
-            const byeContainer = document.getElementById('byeContainer');
-            
-            if (currentByes.length > 0 && currentRoundMatches.length > 0) {
-                byeContainer.innerHTML = `
-                    <div class="bg-amber-50 border border-amber-200 p-3 md:p-4 rounded-xl flex items-center gap-3 shadow-sm mb-4">
-                        <div class="h-8 w-8 md:h-10 md:w-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center shrink-0">
-                            <i class="ph-fill ph-coffee text-lg md:text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-amber-800 text-xs md:text-sm">Waiting on BYE</h4>
-                            <p class="text-amber-700 text-xs md:text-sm mt-0.5">${currentByes.map(p => `<span class="font-medium">${p.name}</span>`).join(', ')}</p>
-                        </div>
-                    </div>
-                `;
-                byeContainer.classList.remove('hidden');
-            } else { byeContainer.classList.add('hidden'); }
-
-            if (currentRoundMatches.length === 0) {
-                container.innerHTML = `
-                    <div class="text-center text-slate-400 py-10 md:py-12 flex flex-col items-center bg-white rounded-xl border border-slate-200">
-                        <i class="ph ph-ghost text-4xl mb-2 opacity-50"></i>
-                        <p class="text-sm md:text-base px-4">No active matches in this round.</p>
-                    </div>`;
-                return;
-            }
-            
-            container.innerHTML = [...currentRoundMatches].sort((a, b) => (a.completed === b.completed) ? 0 : a.completed ? 1 : -1).map(m => {
-                const stateClass = m.completed ? 'opacity-60 grayscale bg-slate-50' : 'bg-white hover:shadow-md';
-                const inputState = m.completed ? 'disabled bg-transparent border-transparent text-slate-500' : 'bg-white border-slate-200';
                 
-                const buildTeamHtml = (team) => team.map(p => {
-                    const badge = p.verified ? '<i class="ph-fill ph-seal-check text-blue-500"></i>' : '';
-                    return `<div class="flex items-center gap-1.5 md:gap-2"><span class="font-semibold text-sm md:text-base flex items-center gap-1">${p.name} ${badge}</span></div>`;
+                const recapHtml = sortedRecap.map((p, i) => {
+                    const w = p.w;
+                    const l = p.m - w;
+                    const pdStr = p.pd > 0 ? `+${p.pd}` : `${p.pd}`;
+                    const pdColor = p.pd > 0 ? 'text-emerald-600' : (p.pd < 0 ? 'text-red-500' : 'text-slate-500');
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+                    return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-2 text-slate-500 font-bold text-xs sm:text-sm">${medal}</td>
+                        <td class="px-4 py-2 font-bold text-xs sm:text-sm">${nameBadge(p.id)}</td>
+                        <td class="px-4 py-2 text-center font-bold text-slate-700 text-xs sm:text-sm">${w} - ${l}</td>
+                        <td class="px-4 py-2 text-center text-xs sm:text-sm font-bold ${pdColor}">${pdStr}</td>
+                    </tr>`;
                 }).join('');
-
-                return `
-                    <div class="flex flex-col md:flex-row items-center justify-between p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm gap-4 ${stateClass}">
-                        <div class="flex items-center justify-between w-full md:w-auto md:flex-1">
-                            <div class="flex flex-col gap-1">${buildTeamHtml(m.t1)}</div>
-                            <div class="px-1 md:px-3">
-                                <input type="number" id="score1-${m.id}" value="${m.score1 !== null ? m.score1 : ''}" class="w-16 h-12 text-center text-xl font-bold border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${inputState}" ${m.completed ? 'readonly' : 'placeholder="0"'} onchange="saveData()">
-                            </div>
-                        </div>
-                        <div class="hidden md:flex flex-col items-center px-2"><span class="text-xs font-bold text-slate-300 bg-slate-100 px-2 py-1 rounded-full">VS</span></div>
-                        <div class="w-full border-t border-slate-100 md:hidden relative flex justify-center"><span class="text-[10px] font-bold text-slate-300 bg-white px-2 absolute -top-2">VS</span></div>
-                        <div class="flex items-center justify-between w-full md:w-auto md:flex-1 md:flex-row-reverse">
-                            <div class="flex flex-col gap-1 md:items-end">${buildTeamHtml(m.t2)}</div>
-                            <div class="px-1 md:px-3">
-                                <input type="number" id="score2-${m.id}" value="${m.score2 !== null ? m.score2 : ''}" class="w-16 h-12 text-center text-xl font-bold border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${inputState}" ${m.completed ? 'readonly' : 'placeholder="0"'} onchange="saveData()">
-                            </div>
-                        </div>
-                        <div class="w-full md:w-16 flex justify-end md:pl-4 mt-2 md:mt-0">
-                            ${!m.completed ? `<button onclick="submitScore(${m.id})" class="w-full md:w-12 h-12 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm font-semibold gap-2"><span class="md:hidden">Submit Score</span><i class="ph ph-check-circle text-2xl"></i></button>` 
-                            : `<div class="w-full md:w-12 h-12 flex items-center justify-center text-emerald-600 bg-emerald-50 md:bg-transparent rounded-lg border md:border-none border-emerald-100"><span class="md:hidden font-semibold mr-2 text-sm">Completed</span><i class="ph-fill ph-check-circle text-2xl md:text-3xl"></i></div>`}
-                        </div>
+                
+                const matchesHtml = matches.map((m) => `
+                    <div class="bg-slate-50 rounded-lg p-3 flex justify-between items-center text-xs sm:text-sm border border-slate-100">
+                        <div class="${m.score1>m.score2?'font-bold text-slate-800':'text-slate-500'} flex-1 text-right">${m.t1Ids.map(nameBadge).join('<br class="sm:hidden"><span class="hidden sm:inline"> & </span>')}</div>
+                        <div class="px-2 sm:px-3 font-mono font-bold text-sm sm:text-base shrink-0">${m.score1} - ${m.score2}</div>
+                        <div class="${m.score2>m.score1?'font-bold text-slate-800':'text-slate-500'} flex-1">${m.t2Ids.map(nameBadge).join('<br class="sm:hidden"><span class="hidden sm:inline"> & </span>')}</div>
                     </div>
-                `;
+                `).join('');
+                
+                return `
+                    <div class="mb-4 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                        <details class="group">
+                            <summary class="flex items-center justify-between p-4 cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-base flex items-center gap-2"><span>📅</span> ${esc(n)}</h4>
+                                    <span class="text-xs font-bold text-slate-500">${esc(d)}</span>
+                                </div>
+                                <span class="text-slate-400 group-open:rotate-180 transition-transform text-lg">▼</span>
+                            </summary>
+                            <div class="p-4 border-t border-slate-100 space-y-6">
+                                <div>
+                                    <h5 class="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">🏆 Session Leaderboard</h5>
+                                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                                        <table class="w-full text-left border-collapse min-w-full">
+                                            <thead>
+                                                <tr class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase bg-slate-50 border-b border-slate-100">
+                                                    <th class="px-4 py-2">Rank</th>
+                                                    <th class="px-4 py-2">Player</th>
+                                                    <th class="px-4 py-2 text-center whitespace-nowrap">W-L</th>
+                                                    <th class="px-4 py-2 text-center whitespace-nowrap">Pt Diff</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                ${recapHtml}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h5 class="text-[10px] sm:text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-3">⚔️ Match Log</h5>
+                                    <div class="space-y-2">
+                                        ${matchesHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                    </div>`;
             }).join('');
         }
-        
+
         loadData();
-        renderApp();
     </script>
 </body>
 </html>
