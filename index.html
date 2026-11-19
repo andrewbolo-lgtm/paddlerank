@@ -211,6 +211,13 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Clear Local Storage -->
+                    <div class="mt-4 pt-4 border-t border-prpm-ice/60">
+                        <button onclick="clearAllStorage()" class="w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors flex justify-center items-center gap-2">
+                            🗑️ Reset App & Clear All Local Data
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-prpm-ice overflow-hidden">
@@ -352,7 +359,7 @@
                 // Set default player state to 'ready'
                 players.forEach(p => { if (!p.sessionState || p.sessionState === 'out') p.sessionState = 'ready'; });
                 
-                setMatchType(matchType);
+                setMatchType(matchType, false);
                 document.getElementById('courtCountDisplay').textContent = numCourts;
                 syncCourtSlots();
             } catch(e) {
@@ -554,11 +561,11 @@
             document.getElementById('courtCountDisplay').textContent = numCourts;
             syncCourtSlots(); saveData(true); renderApp();
         }
-        function setMatchType(type) {
+        function setMatchType(type, shouldSave = true) {
             matchType = type;
             document.getElementById('btn-singles').className = type==='singles'?'px-3 py-1.5 rounded bg-white text-prpm-cyan font-bold shadow-sm':'px-3 py-1.5 rounded text-prpm-navy/70';
             document.getElementById('btn-doubles').className = type==='doubles'?'px-3 py-1.5 rounded bg-white text-prpm-cyan font-bold shadow-sm':'px-3 py-1.5 rounded text-prpm-navy/70';
-            saveData(true);
+            if (shouldSave) saveData(true);
         }
         function toggleSessionMeta() { document.getElementById('sessionMetaDrawer').classList.toggle('hidden'); }
 
@@ -664,6 +671,45 @@
                 }
                 e.target.value=''; saveData(true); renderApp(); alert(`Imported ${pC} players, ${mC} matches.`);
             }; r.readAsText(file);
+        }
+
+        function clearAllStorage() {
+            if (!confirm("⚠️ WARNING: This will permanently delete ALL players, ratings, and match history saved in this browser.\n\nHave you exported a CSV backup first?")) return;
+            if (!confirm("Are you 100% sure you want to wipe all data and reset the app?")) return;
+
+            clearTimeout(saveTimer);
+
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('paddleRankData')) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            players = [];
+            historicalMatches = [];
+            sessionMatches = [];
+            activeCourts = [];
+            numCourts = 3;
+            matchType = 'doubles';
+            playSequence = 1;
+            benchFilter = 'checked';
+            leaderboardMode = 'global';
+
+            document.getElementById('sessionName').value = '';
+            document.getElementById('sessionLocation').value = '';
+            document.getElementById('sessionDate').valueAsDate = new Date();
+            document.getElementById('courtCountDisplay').textContent = numCourts;
+            document.getElementById('rosterFilterInput').value = '';
+            document.getElementById('walkInRating').value = '';
+
+            setMatchType('doubles', false);
+            setBenchFilter('checked');
+            document.getElementById('btn-lb-global').className = 'px-3 py-1.5 rounded bg-prpm-cyan text-white shadow-sm';
+            document.getElementById('btn-lb-session').className = 'px-3 py-1.5 rounded text-prpm-navy/70';
+            syncCourtSlots();
+
+            switchTab('dashboard');
+            alert("All local storage data has been cleared.");
         }
 
         function addPlayer() {
